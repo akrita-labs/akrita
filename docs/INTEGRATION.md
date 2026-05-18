@@ -1,6 +1,6 @@
 # Live integration guide
 
-This document covers the cut-over from `MOCK_MODE=1` to real-world adapters, one primitive at a time. The repo ships with every external surface stubbed out behind a `Protocol` interface in `adapters/base.py`; swapping in a real implementation is a matter of writing a new class and toggling `MOCK_MODE=0` in `.env`.
+This document covers bringing each real-world adapter online, one primitive at a time. Every external surface sits behind a `Protocol` interface in `adapters/base.py`; the concrete live clients live in `adapters/real/` and are wired into `get_adapters()`. There is no mock path — the system runs against live integrations only (see `docs/LIVE_IMPLEMENTATION_PLAN.md`).
 
 The order below reflects critical-path lead times. Day 1 actions have multi-day external dependencies and must be filed before anything else.
 
@@ -28,7 +28,7 @@ Both actions are external and asynchronous. Fire them on Day 1 so the rest of th
 
 ## Polymarket V2 (Days 4–7)
 
-The mock at `adapters/mock/polymarket.py` mimics the CLOB feed, fills, and builder-fee accrual stochastically. Replacing it requires:
+The `PolymarketReal` adapter wraps the V2 CLOB for orderbook, fills, and builder-fee accrual. Building it requires:
 
 1. `pip install py-clob-client-v2` (the legacy `py-clob-client` is V1 and will not work against the April 28 2026 CLOB).
 2. Import `ClobClient` from `polymarket_clob_client_v2`.
@@ -72,7 +72,7 @@ Validate end-to-end on testnet before mainnet cut-over: post a quote, watch the 
 
 ## USYC testnet (Days 4–5)
 
-After the allow-list ticket clears, the integration is straightforward. The mock at `adapters/mock/circle.py::MockUSYC` simulates NAV-based price appreciation at the published ~3.93% APY.
+After the allow-list ticket clears, the integration is straightforward. USYC accrues value via NAV-based price appreciation at the published ~3.93% APY.
 
 Real implementation:
 
@@ -134,7 +134,7 @@ End-to-end test before mainnet: open a 1 USDC perp on BTC-PERP testnet, watch th
 
 ## Nanopayments + IPFS pinning (Day 6)
 
-The mock `MockNanopayment` returns deterministic content-addressed CIDs. The real adapter posts to a pinning provider (Pinata, web3.storage, Lighthouse) that accepts Circle Nanopayments via the x402 protocol.
+The `NanopaymentReal` adapter posts to a pinning provider (Pinata, web3.storage, Lighthouse) that accepts Circle Nanopayments via the x402 protocol, and exposes `fetch_from_ipfs(cid)` for trace verification.
 
 ```python
 from x402_client import Nanopay
@@ -175,7 +175,7 @@ The `Deploy.s.sol` script in this repo deploys both contracts and registers the 
 
 ## Cut-over checklist
 
-When `MOCK_MODE=0` is flipped, the orchestrator's `get_adapters()` factory (`adapters/__init__.py`) wires the real adapter classes in. Before flipping the switch, verify each adapter individually with the corresponding script under `scripts/` (one script per adapter — write these as you go; the mock paths are already exercised by the test suite).
+The orchestrator's `get_adapters()` factory (`adapters/__init__.py`) constructs the live adapter container. Before relying on any adapter, verify it individually with the corresponding smoke script under `scripts/live/` (one script per adapter — see `docs/LIVE_IMPLEMENTATION_PLAN.md` Phase 1 exit gates).
 
 Suggested order of cut-over, lowest blast radius first:
 
@@ -188,4 +188,4 @@ Suggested order of cut-over, lowest blast radius first:
 7. Hyperliquid testnet (open and close a 1 USDC perp position)
 8. Polymarket V2 mainnet (Day 8+, after testnet has been clean for 48 hours)
 
-If any step regresses, the orchestrator's `MOCK_MODE` toggle is per-adapter — fall back individually rather than reverting the whole stack.
+If any step regresses, isolate the failing adapter and degrade that primitive (e.g. CCTP fallback for Gateway, testnet USYC if eligibility is blocked) rather than taking down the whole stack. The non-negotiable safety invariants in `docs/LIVE_IMPLEMENTATION_PLAN.md` still apply.

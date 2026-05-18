@@ -1,28 +1,35 @@
 # AKRITA
 
-AKRITA is a multi-agent keeper prototype for Polymarket V2. Three agents coordinate through a FastAPI orchestrator:
+AKRITA is a multi-agent keeper for Polymarket V2. Three agents coordinate through a FastAPI orchestrator:
 
 - `NOMOS` prices markets and submits quote updates
-- `SPATHA` hedges inventory on Hyperliquid
+- `SPATHA` hedges inventory on a perp venue
 - `AGROS` manages treasury flow between USDC and USYC
 
 Every approved decision is pinned to IPFS, hashed canonically, and committed to Arc before the underlying execution happens.
 
+AKRITA runs against live integrations only — there is no mock path.
+
 ## Stack
 
-- `orchestrator/`: FastAPI BFF, risk gate, trace pipeline, state, demo routes
+- `orchestrator/`: FastAPI BFF, risk gate, trace pipeline, state
 - `agents/`: autonomous NOMOS, SPATHA, and AGROS workers
-- `adapters/`: mock integrations for Arc, Circle, Polymarket, Hyperliquid, and IPFS pinning
+- `adapters/`: protocol definitions (`adapters/base.py`); live clients in `adapters/real/`
 - `shared/`: canonical serialization and shared Pydantic models
 - `contracts/`: Arc smart contracts for trace and builder registration
-- `frontend/`: bundled demo dashboard
-- `docs/`: architecture, integration notes, and brand direction
+- `frontend/`: live keeper dashboard and trace viewer
+- `docs/`: architecture, integration notes, the live implementation plan, and brand direction
+
+## Status
+
+The live adapter layer is not yet wired — `get_adapters()` raises until `adapters/real/`
+is implemented. See `docs/LIVE_IMPLEMENTATION_PLAN.md` Phase 1 for the build order and
+exit gates. Until then the decision pipeline cannot run end-to-end.
 
 ## Quickstart
 
-1. Create a local environment file from `.env.example`.
-2. Run `pip install -e ".[dev]"` for local development, or `docker compose up --build` for the full mock stack.
-3. Start the demo flow with `make demo` once the orchestrator is running.
+1. Create a local environment file from `.env.example` and fill in real credentials for every external surface.
+2. Run `pip install -e ".[dev]"` for local development, or `docker compose up --build` for the full stack.
 
 Useful targets:
 
@@ -33,19 +40,10 @@ Useful targets:
 - `make stop`
 - `make contracts-test`
 
-## Demo flow
+## Live integration
 
-The built-in mock demo exercises the full lifecycle:
+For integration sequencing and deployment, see:
 
-1. NOMOS submits a pricing decision
-2. The orchestrator risk-checks it and commits the trace
-3. A fill is simulated with builder attribution
-4. SPATHA opens a hedge
-5. AGROS subscribes idle USDC into USYC
-
-## Live cut-over
-
-The repository defaults to `MOCK_MODE=1`. For live integrations and deployment sequencing, see:
-
+- `docs/LIVE_IMPLEMENTATION_PLAN.md`
 - `docs/ARCHITECTURE.md`
 - `docs/INTEGRATION.md`
