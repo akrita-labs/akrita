@@ -3,16 +3,13 @@ AKRITA — Adapter protocol definitions.
 
 Every external integration (Polymarket V2, Hyperliquid, Circle Wallets,
 Circle USYC, Circle Gateway, Circle Nanopayments, Arc RPC) has a
-Protocol class here. Mock implementations live in adapters/mock/;
-real implementations live in adapters/{circle,polymarket,hyperliquid}/.
+Protocol class here. Concrete live implementations live in
+adapters/real/.
 
 The Orchestrator and agents only ever import these Protocols and call
-them through `get_adapters()`. That function reads MOCK_MODE from
-env and returns mocks or real implementations.
-
-This pattern lets the team build the architecture without any API
-keys, then swap in real implementations one at a time during the
-hackathon as keys arrive.
+them through `get_adapters()`, which constructs the live adapter
+container. Decoupling the call sites from the concrete clients lets
+each integration come online independently behind a stable interface.
 """
 from __future__ import annotations
 
@@ -305,6 +302,10 @@ class NanopaymentAdapter(Protocol):
 
     async def pin_to_ipfs(self, content_bytes: bytes, max_price_usdc: float = 0.005) -> str:
         """Pins content; returns IPFS CID. Pays via Nanopayment."""
+        ...
+
+    async def fetch_from_ipfs(self, cid: str) -> bytes | None:
+        """Fetch previously pinned content by CID. Returns None if unavailable."""
         ...
 
 

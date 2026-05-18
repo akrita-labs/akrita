@@ -1,6 +1,6 @@
 // AKRITA Frontier-Keeper dashboard.
 // Hydrates initial state via REST, then subscribes to /live WebSocket for
-// incremental events. Demo button triggers POST /demo/run.
+// incremental events.
 
 (() => {
     const API = window.location.origin;
@@ -48,15 +48,12 @@
 
     async function hydrate() {
         try {
-            const [healthR, balR, fillsR, decisionsR, treasuryR] = await Promise.all([
-                fetch(API + "/health").then(r => r.json()),
+            const [balR, fillsR, decisionsR, treasuryR] = await Promise.all([
                 fetch(API + "/state/balances").then(r => r.json()),
                 fetch(API + "/state/fills?limit=50").then(r => r.json()),
                 fetch(API + "/state/decisions?limit=50").then(r => r.json()),
                 fetch(API + "/state/treasury?limit=20").then(r => r.json()),
             ]);
-
-            $("mode-indicator").textContent = healthR.mock_mode ? "MOCK" : "LIVE";
 
             renderBalances(balR);
             renderFills(fillsR);
@@ -170,7 +167,7 @@
     function renderTraceList(traces) {
         const list = $("trace-list");
         if (traces.length === 0) {
-            list.innerHTML = '<div class="empty-state">no traces committed yet — run the demo</div>';
+            list.innerHTML = '<div class="empty-state">no traces committed yet</div>';
             return;
         }
         list.innerHTML = traces.slice(0, 20).map(t => `
@@ -227,30 +224,9 @@
         }
     }
 
-    // ----- Demo trigger ---------------------------------------------------
-
-    async function runDemo() {
-        const btn = $("run-demo-btn");
-        const status = $("demo-status");
-        btn.disabled = true;
-        status.textContent = "running 4-step sequence…";
-        try {
-            const r = await fetch(API + "/demo/run", { method: "POST" });
-            if (!r.ok) throw new Error("demo failed: " + r.status);
-            const body = await r.json();
-            status.textContent = `complete — ${body.steps?.length || 0} steps committed`;
-            await hydrate();
-        } catch (e) {
-            status.textContent = "ERROR: " + e.message;
-        } finally {
-            setTimeout(() => { btn.disabled = false; status.textContent = ""; }, 4000);
-        }
-    }
-
     // ----- Boot -----------------------------------------------------------
 
     document.addEventListener("DOMContentLoaded", () => {
-        $("run-demo-btn").addEventListener("click", runDemo);
         hydrate();
         connectWS();
         // Periodic background refresh as a safety net

@@ -2,9 +2,8 @@ version: "3.9"
 
 # AKRITA — docker-compose for local development.
 #
-# All services run in MOCK_MODE=1 by default. To exercise real
-# integrations, set MOCK_MODE=0 in .env and wire up secrets in
-# secrets/ (see .env.example).
+# Live integrations only. Provide credentials via .env / secrets/
+# (see .env.example) before bringing the stack up.
 
 services:
   orchestrator:
@@ -15,7 +14,6 @@ services:
     ports:
       - "${ORCHESTRATOR_PORT:-8000}:8000"
     environment:
-      - MOCK_MODE=${MOCK_MODE:-1}
       - ARC_RPC_URL=${ARC_RPC_URL:-https://rpc.testnet.arc.io}
       - POLYGON_RPC_URL=${POLYGON_RPC_URL:-https://polygon-rpc.com}
       - TRACE_REGISTRY_ADDR=${TRACE_REGISTRY_ADDR:-0x1111111111111111111111111111111111111111}
@@ -37,7 +35,6 @@ services:
       - PRICING_QUOTE_INTERVAL=${PRICING_QUOTE_INTERVAL:-10}
       - APPETITE_PROFILE=${APPETITE_PROFILE:-balanced}
       - SUBSCRIBED_MARKETS=${SUBSCRIBED_MARKETS:-}
-      - MOCK_MODE=${MOCK_MODE:-1}
     restart: unless-stopped
 
   spatha:
@@ -53,7 +50,6 @@ services:
       - ORCHESTRATOR_URL=http://orchestrator:8000
       - HEDGE_CHECK_INTERVAL=${HEDGE_CHECK_INTERVAL:-5}
       - HEDGE_INVENTORY_THRESHOLD=${HEDGE_INVENTORY_THRESHOLD:-500}
-      - MOCK_MODE=${MOCK_MODE:-1}
     restart: unless-stopped
 
   agros:
@@ -70,5 +66,4 @@ services:
       - TREASURY_SWEEP_INTERVAL=${TREASURY_SWEEP_INTERVAL:-60}
       - SAFETY_MULTIPLIER=${SAFETY_MULTIPLIER:-1.5}
       - MIN_USDC_BUFFER=${MIN_USDC_BUFFER:-200}
-      - MOCK_MODE=${MOCK_MODE:-1}
     restart: unless-stopped

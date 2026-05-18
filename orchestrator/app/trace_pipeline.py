@@ -12,6 +12,7 @@ predates the action — no post-hoc rationalization possible.
 """
 from __future__ import annotations
 
+import os
 import time
 from dataclasses import dataclass
 from typing import Any
@@ -66,7 +67,7 @@ class TracePipeline:
             technical=technical,
             conclusion=conclusion,
             risk_gate=risk_result,
-            model="mock-llm-v1",
+            model=os.environ.get("AKRITA_REASONER_MODEL", "unset"),
             computation_ms=0,
             ts_ms=int(time.time() * 1000),
         )
@@ -83,7 +84,6 @@ class TracePipeline:
         from eth_abi import encode as abi_encode
 
         # commitTrace(uint256 agentId, uint256 decisionId, bytes32 traceHash, string ipfsCid)
-        # We're mocking, so calldata is symbolic — real impl uses web3.py contract.encodeABI
         calldata = abi_encode(
             ["uint256", "uint256", "bytes32", "string"],
             [self._agent_id(decision.agent_role), decision.decision_id,

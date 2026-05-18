@@ -57,9 +57,12 @@ async def fetch_balances() -> dict:
 
 
 async def forecast_outflow_60min() -> float:
-    """Mocked forecast: in real impl, derive from pending quote sizes +
-    pending hedge margin commits."""
-    # Conservative default — 60min outflow estimate
+    """Projected next-60min USDC outflow.
+
+    Conservative flat estimate until the live projection (open orders +
+    expected fills + pending hedge margin + reserve policy) is wired per
+    docs/LIVE_IMPLEMENTATION_PLAN.md Phase 6.
+    """
     return 200.0
 
 

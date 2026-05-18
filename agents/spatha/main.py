@@ -89,7 +89,7 @@ async def build_hedge(inv: dict) -> HedgeDecision | None:
     # Long YES on PM -> short the proxy; short YES on PM -> long the proxy
     side = HedgeSide.SHORT if exposure > 0 else HedgeSide.LONG
     size = abs(exposure) / 1000  # tiny: 1000 PM shares ~ 1 BTC contract proxy
-    margin = abs(exposure) * 0.5  # 50% of exposure as margin (mock; real lookup venue spec)
+    margin = abs(exposure) * 0.5  # 50% of exposure as margin; venue spec lookup wired in Phase 5
 
     rationale = {
         "trigger": "inventory_threshold_breach",

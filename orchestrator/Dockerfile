@@ -18,7 +18,6 @@ COPY orchestrator /app/orchestrator
 COPY frontend /app/frontend
 
 ENV PYTHONPATH=/app
-ENV MOCK_MODE=1
 ENV ORCHESTRATOR_PORT=8000
 
 EXPOSE 8000

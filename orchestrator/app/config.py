@@ -7,9 +7,6 @@ from dataclasses import dataclass
 
 @dataclass
 class Settings:
-    # Mode
-    mock_mode: bool = os.environ.get("MOCK_MODE", "1") == "1"
-
     # Network identifiers
     arc_rpc_url: str = os.environ.get("ARC_RPC_URL", "https://rpc.testnet.arc.io")
     polygon_rpc_url: str = os.environ.get("POLYGON_RPC_URL", "https://polygon-rpc.com")

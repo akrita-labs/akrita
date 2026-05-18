@@ -9,7 +9,7 @@ attribution fees. It governs the bounds of the inventory.
 Loop: every PRICING_QUOTE_INTERVAL_SEC, for each subscribed market:
   1. Fetch orderbook + recent fills
   2. Compute deterministic microprice + inventory-adjusted target
-  3. LLM calibrator (mocked here; replace with real call in prod)
+  3. Clamp to tradeable bounds
   4. POST /decisions/pricing to the orchestrator
 """
 from __future__ import annotations
@@ -17,7 +17,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-import random
 import time
 
 import httpx
@@ -37,13 +36,6 @@ QUOTE_INTERVAL = int(os.environ.get("PRICING_QUOTE_INTERVAL", "10"))
 SUBSCRIBED_MARKETS = os.environ.get("SUBSCRIBED_MARKETS", "").split(",") or []
 APPETITE = AppetiteProfile(os.environ.get("APPETITE_PROFILE", "balanced"))
 
-# Default subscriptions = the canned mock markets
-DEFAULT_MARKETS = [
-    "0x" + "a" * 40,
-    "0x" + "b" * 40,
-    "0x" + "c" * 40,
-]
-
 
 # Local monotonic decision counter (orchestrator dedups by nonce)
 _decision_counter = 0
@@ -61,8 +53,7 @@ async def compute_quote(market_id: str) -> PricingDecision | None:
     1. Pull orderbook + recent fills
     2. Deterministic microprice
     3. Inventory skew
-    4. LLM calibrator (bounded ±1000bps)
-    5. Bounds clamp, then construct decision
+    4. Bounds clamp, then construct decision
     """
     adapters = get_adapters()
 
@@ -74,18 +65,17 @@ async def compute_quote(market_id: str) -> PricingDecision | None:
     mid = book.microprice
     fair_spread = max(book.spread_bps / 10000, 0.005)
 
-    # 3. Inventory skew (mocked — would query state in prod)
-    inv = 0.0  # neutral
+    # 3. Inventory skew — neutral until the live inventory read is wired
+    #    (see docs/LIVE_IMPLEMENTATION_PLAN.md Phase 4).
+    inv = 0.0
     skew = inv * 0.0001
 
     target_bid = mid - fair_spread / 2 - skew
     target_ask = mid + fair_spread / 2 - skew
 
-    # 4. LLM calibrator (mock: small symmetric jitter ±50 bps)
-    bid_delta = random.uniform(-0.005, 0.005)
-    ask_delta = random.uniform(-0.005, 0.005)
-    final_bid = max(0.02, min(0.98, target_bid + bid_delta))
-    final_ask = max(0.02, min(0.98, target_ask + ask_delta))
+    # 4. Clamp to tradeable bounds
+    final_bid = max(0.02, min(0.98, target_bid))
+    final_ask = max(0.02, min(0.98, target_ask))
 
     # Enforce bid < ask with minimum spread
     if final_ask - final_bid < 0.005:
@@ -103,8 +93,6 @@ async def compute_quote(market_id: str) -> PricingDecision | None:
         "midpoint": mid,
         "spread_bps": book.spread_bps,
         "inventory_skew": inv,
-        "llm_bid_delta": bid_delta,
-        "llm_ask_delta": ask_delta,
         "appetite": APPETITE.value,
     }
 
@@ -118,7 +106,7 @@ async def compute_quote(market_id: str) -> PricingDecision | None:
         bid=round(final_bid, 4),
         ask=round(final_ask, 4),
         size=size,
-        confidence=round(random.uniform(0.55, 0.85), 3),
+        confidence=0.7,
         appetite_profile=APPETITE,
     )
 
@@ -145,7 +133,15 @@ async def submit(decision: PricingDecision) -> None:
 
 
 async def main() -> None:
-    markets = [m for m in SUBSCRIBED_MARKETS if m] or DEFAULT_MARKETS
+    markets = [m for m in SUBSCRIBED_MARKETS if m]
+    if not markets:
+        log.warning(
+            "NOMOS idle — no SUBSCRIBED_MARKETS configured. Set the env var "
+            "to a comma-separated list of bytes32 market IDs to start quoting."
+        )
+        while True:
+            await asyncio.sleep(QUOTE_INTERVAL)
+
     log.info("NOMOS starting — subscribed to %d markets, appetite=%s",
              len(markets), APPETITE.value)
 

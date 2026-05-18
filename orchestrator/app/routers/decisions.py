@@ -47,7 +47,7 @@ async def post_pricing_decision(decision: PricingDecision) -> dict:
 
 
 async def _execute_pricing(decision: PricingDecision) -> dict:
-    """Submit the quote to Polymarket V2 via py-clob-client (mocked in dev)."""
+    """Submit the quote to Polymarket V2 via py-clob-client-v2."""
     adapters = get_adapters()
     bid_id, ask_id = await adapters.polymarket.submit_quote(
         market_id=decision.market_id,

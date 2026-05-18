@@ -41,12 +41,7 @@ async def verify_trace(decision_id: int) -> dict:
         raise HTTPException(404, "trace not found")
 
     adapters = get_adapters()
-    # Mock nanopayment has a _fetch helper; real impl would fetch from IPFS HTTP gw
-    from adapters.mock.circle import MockNanopayment
-    if not isinstance(adapters.nanopayment, MockNanopayment):
-        raise HTTPException(501, "live IPFS verification not yet wired")
-
-    body_bytes = adapters.nanopayment._fetch(trace["ipfs_cid"])
+    body_bytes = await adapters.nanopayment.fetch_from_ipfs(trace["ipfs_cid"])
     if body_bytes is None:
         raise HTTPException(502, "IPFS body unavailable")
 
@@ -74,11 +69,7 @@ async def get_trace_body(decision_id: int) -> dict:
         raise HTTPException(404, "trace not found")
 
     adapters = get_adapters()
-    from adapters.mock.circle import MockNanopayment
-    if not isinstance(adapters.nanopayment, MockNanopayment):
-        raise HTTPException(501, "live IPFS fetch not yet wired")
-
-    body_bytes = adapters.nanopayment._fetch(trace["ipfs_cid"])
+    body_bytes = await adapters.nanopayment.fetch_from_ipfs(trace["ipfs_cid"])
     if body_bytes is None:
         raise HTTPException(502, "IPFS body unavailable")
 

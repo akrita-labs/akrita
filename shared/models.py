@@ -184,7 +184,7 @@ class TraceBody(BaseModel):
     risk_gate: RiskGateResult
 
     # Metadata
-    model: str = "mock-llm-v1"
+    model: str = "unset"
     computation_ms: int = 0
     ts_ms: int
 

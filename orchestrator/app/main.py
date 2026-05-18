@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from orchestrator.app.config import settings
-from orchestrator.app.routers import decisions, demo, live, state as state_router, traces
+from orchestrator.app.routers import decisions, live, state as state_router, traces
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,7 +26,7 @@ log = logging.getLogger("akrita")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    log.info("AKRITA orchestrator starting (mock_mode=%s)", settings.mock_mode)
+    log.info("AKRITA orchestrator starting")
     log.info("  TraceRegistry: %s", settings.trace_registry_addr)
     log.info("  BuilderRegistry: %s", settings.builder_registry_addr)
     log.info("  BuilderCode: %s", settings.builder_code[:10] + "...")
@@ -57,12 +57,11 @@ app.include_router(decisions.router, prefix="/decisions", tags=["decisions"])
 app.include_router(state_router.router, prefix="/state", tags=["state"])
 app.include_router(traces.router, prefix="/traces", tags=["traces"])
 app.include_router(live.router, prefix="/live", tags=["live"])
-app.include_router(demo.router, prefix="/demo", tags=["demo"])
 
 
 @app.get("/health", tags=["meta"])
 async def health() -> dict:
-    return {"status": "ok", "mock_mode": settings.mock_mode}
+    return {"status": "ok"}
 
 
 # Serve the bundled demo dashboard at /  — only if frontend is built.
