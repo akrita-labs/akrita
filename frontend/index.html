@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AKRITA — Frontier Keeper</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+    <!-- Background texture overlay -->
+    <div class="parchment-overlay"></div>
+
+    <header class="masthead">
+        <div class="masthead-inner">
+            <div class="brand">
+                <div class="brand-mark">
+                    <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <!-- Stylized Akritai sigil: sword crossed over wheat sheaf -->
+                        <g stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round">
+                            <line x1="30" y1="6" x2="30" y2="48" />
+                            <line x1="20" y1="40" x2="40" y2="40" />
+                            <line x1="22" y1="50" x2="38" y2="50" />
+                            <path d="M 15 18 Q 30 24, 45 18" />
+                            <path d="M 17 22 Q 30 28, 43 22" />
+                            <circle cx="30" cy="6" r="1.5" fill="currentColor" />
+                        </g>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1>AKRITA</h1>
+                    <p class="brand-tagline">Frontier-Keeper Protocol</p>
+                </div>
+            </div>
+            <div class="meta-strip">
+                <span class="meta-item"><label>Mode</label><span id="mode-indicator" class="value">MOCK</span></span>
+                <span class="meta-item"><label>Connection</label><span id="ws-status" class="value status-pending">…</span></span>
+                <span class="meta-item"><label>Block</label><span id="arc-block" class="value">—</span></span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero / thesis strip -->
+        <section class="thesis">
+            <div class="thesis-line">
+                <span class="dim">Stratiotika Ktemata —</span>
+                capital that <em>farms</em> in peacetime,
+                <em>fights</em> in wartime.
+            </div>
+            <div class="thesis-sub">
+                NOMOS quotes the frontier · SPATHA contains the breach · AGROS works the field
+            </div>
+        </section>
+
+        <!-- KPI Row -->
+        <section class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label">USYC Balance</div>
+                <div class="kpi-value" id="kpi-usyc">—</div>
+                <div class="kpi-sub" id="kpi-usyc-apy">apy: —</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Operating USDC</div>
+                <div class="kpi-value" id="kpi-usdc">—</div>
+                <div class="kpi-sub">Arc &middot; available</div>
+            </div>
+            <div class="kpi-card highlight">
+                <div class="kpi-label">Builder Fees Accrued</div>
+                <div class="kpi-value" id="kpi-fees">$0.00</div>
+                <div class="kpi-sub">cumulative · USDC</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Total Volume Attributed</div>
+                <div class="kpi-value" id="kpi-volume">$0.00</div>
+                <div class="kpi-sub">Polymarket V2</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Traces Committed</div>
+                <div class="kpi-value" id="kpi-traces">0</div>
+                <div class="kpi-sub">on-chain on Arc</div>
+            </div>
+        </section>
+
+        <!-- Three agent panels -->
+        <section class="agent-grid">
+            <article class="agent-card" data-agent="nomos">
+                <header>
+                    <div class="agent-mark">NOMOS</div>
+                    <div class="agent-greek">νόμος</div>
+                    <div class="agent-role">Pricing · the frontier law</div>
+                </header>
+                <div class="agent-feed" id="feed-nomos">
+                    <div class="empty-state">awaiting first quote…</div>
+                </div>
+            </article>
+
+            <article class="agent-card" data-agent="spatha">
+                <header>
+                    <div class="agent-mark">SPATHA</div>
+                    <div class="agent-greek">σπάθα</div>
+                    <div class="agent-role">Hedge · the cavalry sword</div>
+                </header>
+                <div class="agent-feed" id="feed-spatha">
+                    <div class="empty-state">standing watch…</div>
+                </div>
+            </article>
+
+            <article class="agent-card" data-agent="agros">
+                <header>
+                    <div class="agent-mark">AGROS</div>
+                    <div class="agent-greek">ἀγρός</div>
+                    <div class="agent-role">Treasury · the cultivated field</div>
+                </header>
+                <div class="agent-feed" id="feed-agros">
+                    <div class="empty-state">tending the field…</div>
+                </div>
+            </article>
+        </section>
+
+        <!-- Demo trigger + recent fills -->
+        <section class="demo-row">
+            <div class="demo-trigger">
+                <button id="run-demo-btn" class="btn-primary">
+                    <span class="btn-label">Run Demo Sequence</span>
+                    <span class="btn-sub">NOMOS quote → fill → SPATHA hedge → AGROS sweep</span>
+                </button>
+                <div id="demo-status" class="demo-status"></div>
+            </div>
+
+            <div class="fills-panel">
+                <header>
+                    <h2>Recent Fills</h2>
+                    <span class="hint">Polymarket V2 attribution events</span>
+                </header>
+                <div class="fills-list" id="fills-list">
+                    <div class="empty-state">no fills yet</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Trace inspector -->
+        <section class="trace-panel">
+            <header>
+                <h2>Trace Registry</h2>
+                <span class="hint">Every decision · sha256 → IPFS → Arc</span>
+            </header>
+            <div class="trace-list" id="trace-list">
+                <div class="empty-state">no traces committed yet — run the demo</div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <span class="dim">AKRITA · Agora Agents Hackathon · Canteen × Circle × Arc · May 2026</span>
+    </footer>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

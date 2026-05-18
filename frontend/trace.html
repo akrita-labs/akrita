@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AKRITA — Trace Inspector</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Spectral:wght@300;400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/styles.css" />
+    <style>
+        .trace-wrap {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 40px 80px;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 24px;
+            font-family: var(--font-body);
+            color: var(--ink-soft);
+            text-decoration: none;
+            font-style: italic;
+            font-size: 13px;
+            border-bottom: 1px dotted var(--ink-soft);
+        }
+        .back-link:hover { color: var(--gold-deep); border-color: var(--gold-deep); }
+
+        .trace-header {
+            border-bottom: 2px solid var(--ink);
+            padding-bottom: 18px;
+            margin-bottom: 24px;
+        }
+        .trace-header h1 {
+            font-family: var(--font-display);
+            font-size: 32px;
+            margin: 0 0 6px;
+            letter-spacing: 0.08em;
+            font-weight: 600;
+        }
+        .trace-header .sub {
+            font-size: 12px;
+            color: var(--ink-faded);
+            font-family: var(--font-mono);
+        }
+
+        .verify-row {
+            background: var(--vellum);
+            border: 1px solid var(--rule);
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 16px;
+            align-items: center;
+        }
+        .verify-status {
+            font-family: var(--font-display);
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+        }
+        .verify-status.match { color: var(--moss); }
+        .verify-status.mismatch { color: var(--crimson); }
+        .verify-status.pending { color: var(--gold-deep); }
+        .verify-detail {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--ink-soft);
+        }
+        .verify-detail .pair { display: block; margin: 2px 0; }
+        .verify-detail .label { color: var(--ink-faded); }
+
+        .trace-section {
+            margin-bottom: 24px;
+            background: var(--vellum);
+            border: 1px solid var(--rule);
+            border-left: 3px solid var(--gold);
+        }
+        .trace-section header {
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--rule);
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            cursor: pointer;
+            user-select: none;
+        }
+        .trace-section header h2 {
+            font-family: var(--font-display);
+            font-size: 18px;
+            margin: 0;
+            letter-spacing: 0.1em;
+            color: var(--ink);
+            font-weight: 600;
+        }
+        .trace-section header .toggle {
+            font-family: var(--font-body);
+            font-size: 12px;
+            color: var(--ink-faded);
+            font-style: italic;
+        }
+        .trace-section.collapsed .content { display: none; }
+        .content {
+            padding: 18px 20px;
+        }
+        pre.code-block {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            line-height: 1.5;
+            background: #1a1f2e;
+            color: #e8e3d3;
+            padding: 16px;
+            border-radius: 2px;
+            overflow-x: auto;
+            margin: 0;
+        }
+        .risk-checks { margin: 0; padding: 0; list-style: none; }
+        .risk-checks li {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 12px;
+            padding: 6px 0;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            border-bottom: 1px dotted var(--rule);
+        }
+        .risk-checks li:last-child { border-bottom: none; }
+        .risk-checks .pass { color: var(--moss); font-weight: 500; }
+        .risk-checks .fail { color: var(--crimson); font-weight: 500; }
+        .risk-checks .name { color: var(--ink); }
+        .risk-checks .detail { color: var(--ink-faded); }
+
+        .error-state {
+            text-align: center;
+            padding: 80px 40px;
+            color: var(--ink-soft);
+            font-style: italic;
+            font-family: var(--font-display);
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="parchment-overlay"></div>
+    <header class="masthead">
+        <div class="masthead-inner">
+            <div class="brand">
+                <div class="brand-mark">
+                    <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <g stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round">
+                            <line x1="30" y1="6" x2="30" y2="48" />
+                            <line x1="20" y1="40" x2="40" y2="40" />
+                            <line x1="22" y1="50" x2="38" y2="50" />
+                            <path d="M 15 18 Q 30 24, 45 18" />
+                            <path d="M 17 22 Q 30 28, 43 22" />
+                            <circle cx="30" cy="6" r="1.5" fill="currentColor" />
+                        </g>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1>AKRITA</h1>
+                    <p class="brand-tagline">Trace Inspector</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="trace-wrap">
+        <a href="/" class="back-link">← back to dispatch</a>
+        <div id="trace-content"><div class="error-state">loading…</div></div>
+    </main>
+
+    <script>
+        const $ = (id) => document.getElementById(id);
+        const params = new URLSearchParams(window.location.search);
+        const hashParam = params.get("hash");
+        const idParam = params.get("id");
+
+        async function load() {
+            try {
+                let trace, body, verify;
+                if (idParam) {
+                    trace = await fetch(`/traces/${idParam}`).then(r => r.json());
+                } else if (hashParam) {
+                    trace = await fetch(`/traces/by-hash/${hashParam}`).then(r => r.json());
+                } else {
+                    throw new Error("missing ?hash=... or ?id=... in URL");
+                }
+                const decId = trace.decision_id;
+                [body, verify] = await Promise.all([
+                    fetch(`/traces/${decId}/body`).then(r => r.json()),
+                    fetch(`/traces/${decId}/verify`).then(r => r.json()),
+                ]);
+                render(trace, body, verify);
+            } catch (e) {
+                $("trace-content").innerHTML = `<div class="error-state">${e.message}</div>`;
+            }
+        }
+
+        function shortHash(h) { return h.slice(0, 10) + "…" + h.slice(-6); }
+
+        function render(trace, body, verify) {
+            const statusClass = verify.matches ? "match" : "mismatch";
+            const statusText = verify.matches ? "HASH VERIFIED" : "HASH MISMATCH";
+
+            $("trace-content").innerHTML = `
+                <div class="trace-header">
+                    <h1>${body.decision_type.replaceAll("_", " ").toUpperCase()}</h1>
+                    <div class="sub">
+                        <strong>${body.agent_role.toUpperCase()}</strong>
+                        &middot; decision #${body.decision_id}
+                        &middot; ${new Date(body.ts_ms).toLocaleString()}
+                    </div>
+                </div>
+
+                <div class="verify-row">
+                    <div class="verify-status ${statusClass}">${statusText}</div>
+                    <div class="verify-detail">
+                        <span class="pair"><span class="label">on-chain hash:</span> ${verify.on_chain_hash}</span>
+                        <span class="pair"><span class="label">recomputed:</span> ${verify.recomputed_hash}</span>
+                        <span class="pair"><span class="label">ipfs:</span> ${verify.ipfs_cid}</span>
+                        <span class="pair"><span class="label">arc tx:</span> ${verify.arc_tx_hash} (block ${verify.arc_block})</span>
+                    </div>
+                    <div class="verify-detail">
+                        <span class="pair">${verify.body_size_bytes} bytes</span>
+                    </div>
+                </div>
+
+                <section class="trace-section">
+                    <header onclick="this.parentElement.classList.toggle('collapsed')">
+                        <h2>Fundamentals</h2>
+                        <span class="toggle">▾ collapse</span>
+                    </header>
+                    <div class="content">
+                        <pre class="code-block">${JSON.stringify(body.fundamentals, null, 2)}</pre>
+                    </div>
+                </section>
+
+                <section class="trace-section">
+                    <header onclick="this.parentElement.classList.toggle('collapsed')">
+                        <h2>Technical</h2>
+                        <span class="toggle">▾ collapse</span>
+                    </header>
+                    <div class="content">
+                        <pre class="code-block">${JSON.stringify(body.technical, null, 2)}</pre>
+                    </div>
+                </section>
+
+                <section class="trace-section">
+                    <header onclick="this.parentElement.classList.toggle('collapsed')">
+                        <h2>Conclusion</h2>
+                        <span class="toggle">▾ collapse</span>
+                    </header>
+                    <div class="content">
+                        <pre class="code-block">${JSON.stringify(body.conclusion, null, 2)}</pre>
+                    </div>
+                </section>
+
+                <section class="trace-section">
+                    <header onclick="this.parentElement.classList.toggle('collapsed')">
+                        <h2>Risk Gate</h2>
+                        <span class="toggle">▾ collapse</span>
+                    </header>
+                    <div class="content">
+                        <p><strong>${body.risk_gate.approved ? "APPROVED" : "REJECTED"}</strong>
+                           ${body.risk_gate.approved ? "" : " — " + body.risk_gate.reason}</p>
+                        <ul class="risk-checks">
+                            ${(body.risk_gate.checks || []).map(c => `
+                                <li>
+                                    <span class="${c.passed ? 'pass' : 'fail'}">${c.passed ? "✓" : "✗"}</span>
+                                    <span class="name">${c.name}</span>
+                                    <span class="detail">${c.detail || ""}</span>
+                                </li>
+                            `).join("")}
+                        </ul>
+                    </div>
+                </section>
+            `;
+        }
+
+        load();
+    </script>
+</body>
+</html>
