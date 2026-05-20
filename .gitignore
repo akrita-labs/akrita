@@ -10,7 +10,8 @@ htmlcov/
 venv/
 
 .env
-secrets/
+secrets/*
+!secrets/README.md
 
 akrita.egg-info/
 artifacts/

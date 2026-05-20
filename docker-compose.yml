@@ -1,11 +1,41 @@
-version: "3.9"
-
 # AKRITA — docker-compose for local development.
 #
 # Live integrations only. Provide credentials via .env / secrets/
 # (see .env.example) before bringing the stack up.
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: akrita-postgres
+    environment:
+      POSTGRES_USER: akrita
+      POSTGRES_PASSWORD: akrita
+      POSTGRES_DB: akrita
+    ports:
+      - "5432:5432"
+    volumes:
+      - akrita-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U akrita -d akrita"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: akrita-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - akrita-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
   orchestrator:
     build:
       context: .
@@ -13,12 +43,18 @@ services:
     container_name: akrita-orchestrator
     ports:
       - "${ORCHESTRATOR_PORT:-8000}:8000"
+    env_file: .env
     environment:
-      - ARC_RPC_URL=${ARC_RPC_URL:-https://rpc.testnet.arc.io}
-      - POLYGON_RPC_URL=${POLYGON_RPC_URL:-https://polygon-rpc.com}
-      - TRACE_REGISTRY_ADDR=${TRACE_REGISTRY_ADDR:-0x1111111111111111111111111111111111111111}
-      - BUILDER_REGISTRY_ADDR=${BUILDER_REGISTRY_ADDR:-0x2222222222222222222222222222222222222222}
-      - POLY_BUILDER_CODE=${POLY_BUILDER_CODE:-0xababababababababababababababababababababababababababababababababab}
+      # Docker-internal hostnames override the local-dev defaults in .env.
+      POSTGRES_DSN: postgresql+asyncpg://akrita:akrita@postgres:5432/akrita
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ./secrets:/app/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
   nomos:
@@ -28,13 +64,11 @@ services:
       args:
         AGENT_NAME: nomos
     container_name: akrita-nomos
+    env_file: .env
+    environment:
+      ORCHESTRATOR_URL: http://orchestrator:8000
     depends_on:
       - orchestrator
-    environment:
-      - ORCHESTRATOR_URL=http://orchestrator:8000
-      - PRICING_QUOTE_INTERVAL=${PRICING_QUOTE_INTERVAL:-10}
-      - APPETITE_PROFILE=${APPETITE_PROFILE:-balanced}
-      - SUBSCRIBED_MARKETS=${SUBSCRIBED_MARKETS:-}
     restart: unless-stopped
 
   spatha:
@@ -44,12 +78,11 @@ services:
       args:
         AGENT_NAME: spatha
     container_name: akrita-spatha
+    env_file: .env
+    environment:
+      ORCHESTRATOR_URL: http://orchestrator:8000
     depends_on:
       - orchestrator
-    environment:
-      - ORCHESTRATOR_URL=http://orchestrator:8000
-      - HEDGE_CHECK_INTERVAL=${HEDGE_CHECK_INTERVAL:-5}
-      - HEDGE_INVENTORY_THRESHOLD=${HEDGE_INVENTORY_THRESHOLD:-500}
     restart: unless-stopped
 
   agros:
@@ -59,11 +92,13 @@ services:
       args:
         AGENT_NAME: agros
     container_name: akrita-agros
+    env_file: .env
+    environment:
+      ORCHESTRATOR_URL: http://orchestrator:8000
     depends_on:
       - orchestrator
-    environment:
-      - ORCHESTRATOR_URL=http://orchestrator:8000
-      - TREASURY_SWEEP_INTERVAL=${TREASURY_SWEEP_INTERVAL:-60}
-      - SAFETY_MULTIPLIER=${SAFETY_MULTIPLIER:-1.5}
-      - MIN_USDC_BUFFER=${MIN_USDC_BUFFER:-200}
     restart: unless-stopped
+
+volumes:
+  akrita-postgres-data:
+  akrita-redis-data:

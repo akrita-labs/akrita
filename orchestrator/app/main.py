@@ -15,6 +15,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from orchestrator.app.config import settings
+from orchestrator.app.db.session import init_engine, shutdown_engine
+from orchestrator.app.redis_client import init_redis, shutdown_redis
 from orchestrator.app.routers import decisions, live, state as state_router, traces
 
 logging.basicConfig(
@@ -27,11 +29,21 @@ log = logging.getLogger("akrita")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("AKRITA orchestrator starting")
-    log.info("  TraceRegistry: %s", settings.trace_registry_addr)
-    log.info("  BuilderRegistry: %s", settings.builder_registry_addr)
-    log.info("  BuilderCode: %s", settings.builder_code[:10] + "...")
-    yield
-    log.info("AKRITA orchestrator shutting down")
+    log.info("  TraceRegistry: %s", settings.trace_registry_addr or "<unset>")
+    log.info("  BuilderRegistry: %s", settings.builder_registry_addr or "<unset>")
+    log.info(
+        "  BuilderCode: %s",
+        (settings.poly_builder_code[:10] + "...") if settings.poly_builder_code else "<unset>",
+    )
+    init_engine()
+    init_redis()
+    log.info("  Postgres + Redis engines initialised")
+    try:
+        yield
+    finally:
+        await shutdown_engine()
+        await shutdown_redis()
+        log.info("AKRITA orchestrator shutting down")
 
 
 app = FastAPI(
