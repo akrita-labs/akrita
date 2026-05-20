@@ -54,7 +54,7 @@ async def _execute_pricing(decision: PricingDecision) -> dict:
         bid=decision.bid,
         ask=decision.ask,
         size=decision.size,
-        builder_code=settings.builder_code,
+        builder_code=settings.poly_builder_code,
     )
     return {"bid_order_id": bid_id, "ask_order_id": ask_id}
 

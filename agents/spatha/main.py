@@ -21,11 +21,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 import time
 
 import httpx
 
+from shared.config import settings
 from shared.canonical import trace_hash
 from shared.models import (
     HedgeDecision,
@@ -40,9 +40,9 @@ logging.basicConfig(
 )
 log = logging.getLogger("spatha")
 
-ORCHESTRATOR_URL = os.environ.get("ORCHESTRATOR_URL", "http://localhost:8000")
-HEDGE_INTERVAL = int(os.environ.get("HEDGE_CHECK_INTERVAL", "5"))
-HEDGE_THRESHOLD = float(os.environ.get("HEDGE_INVENTORY_THRESHOLD", "500.0"))
+ORCHESTRATOR_URL = settings.orchestrator_url
+HEDGE_INTERVAL = settings.hedge_check_interval
+HEDGE_THRESHOLD = settings.hedge_inventory_threshold
 
 
 # Mapping from market_id prefix -> reference perp instrument.

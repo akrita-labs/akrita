@@ -19,11 +19,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 import time
 
 import httpx
 
+from shared.config import settings
 from shared.canonical import trace_hash
 from shared.models import TreasuryAction, TreasuryDecision
 
@@ -33,11 +33,11 @@ logging.basicConfig(
 )
 log = logging.getLogger("agros")
 
-ORCHESTRATOR_URL = os.environ.get("ORCHESTRATOR_URL", "http://localhost:8000")
-SWEEP_INTERVAL = int(os.environ.get("TREASURY_SWEEP_INTERVAL", "60"))
-SAFETY_MULTIPLIER = float(os.environ.get("SAFETY_MULTIPLIER", "1.5"))
-MIN_USDC_BUFFER = float(os.environ.get("MIN_USDC_BUFFER", "200.0"))
-USYC_MIN_SUBSCRIBE = float(os.environ.get("USYC_MIN_SUBSCRIBE", "50.0"))
+ORCHESTRATOR_URL = settings.orchestrator_url
+SWEEP_INTERVAL = settings.treasury_sweep_interval
+SAFETY_MULTIPLIER = settings.safety_multiplier
+MIN_USDC_BUFFER = settings.min_usdc_buffer
+USYC_MIN_SUBSCRIBE = settings.usyc_min_subscribe
 
 
 _decision_counter = 0

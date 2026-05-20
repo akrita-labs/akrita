@@ -16,12 +16,12 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 import time
 
 import httpx
 
 from adapters import get_adapters
+from shared.config import settings
 from shared.canonical import trace_hash
 from shared.models import AppetiteProfile, PricingDecision
 
@@ -31,10 +31,10 @@ logging.basicConfig(
 )
 log = logging.getLogger("nomos")
 
-ORCHESTRATOR_URL = os.environ.get("ORCHESTRATOR_URL", "http://localhost:8000")
-QUOTE_INTERVAL = int(os.environ.get("PRICING_QUOTE_INTERVAL", "10"))
-SUBSCRIBED_MARKETS = os.environ.get("SUBSCRIBED_MARKETS", "").split(",") or []
-APPETITE = AppetiteProfile(os.environ.get("APPETITE_PROFILE", "balanced"))
+ORCHESTRATOR_URL = settings.orchestrator_url
+QUOTE_INTERVAL = settings.pricing_quote_interval
+SUBSCRIBED_MARKETS = settings.subscribed_market_ids
+APPETITE = AppetiteProfile(settings.appetite_profile)
 
 
 # Local monotonic decision counter (orchestrator dedups by nonce)
