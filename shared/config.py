@@ -15,7 +15,7 @@ from __future__ import annotations
 import re
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -62,11 +62,14 @@ class Settings(BaseSettings):
     poly_api_key: str = ""
     poly_api_secret: str = ""
     poly_api_passphrase: str = ""
+    # Operator confirms the signer EOA holds pUSD collateral + allowances.
+    poly_collateral_ready: bool = False
 
     # ---------- Circle -----------------------------------------------------
     circle_api_key: str = ""
     circle_env: Literal["sandbox", "production"] = "sandbox"
     circle_wallet_set_id: str = ""
+    circle_entity_secret_file: str = "secrets/circle_entity_secret.txt"
 
     # ---------- Keeper wallets (per chain, EOA address shared across) -----
     pricing_wallet_addr: str = ""
@@ -84,6 +87,16 @@ class Settings(BaseSettings):
 
     # ---------- USYC -------------------------------------------------------
     usyc_wallet_allowlisted: bool = False
+
+    # ---------- Circle Gateway (cross-chain USDC) -------------------------
+    # Gateway is a contract-level integration (no Python SDK): deposit into the
+    # Gateway Wallet, POST a signed burn intent to this REST API for an
+    # attestation, then call gatewayMint on the destination. Testnet default;
+    # switch to https://gateway-api.circle.com/v1 for mainnet. The Wallet /
+    # Minter addresses are network constants and live in adapters/real/gateway.py.
+    gateway_api_url: str = "https://gateway-api-testnet.circle.com/v1"
+    # Per-transfer fee ceiling (USDC) used as `maxFee` in the burn intent.
+    gateway_max_fee_usdc: float = 2.01
 
     # ---------- IPFS pin provider -----------------------------------------
     pin_provider: Literal["pinata", "web3storage"] = "pinata"

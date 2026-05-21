@@ -57,18 +57,37 @@ def get_adapters() -> Adapters:
 
 
 def _build_real_adapters() -> Adapters:
-    """Live adapter wiring.
+    """Live adapter wiring — all seven adapters are real implementations.
 
-    Concrete clients live under `adapters/real/` behind the protocols
-    in `adapters/base.py`. Fill this in per the live implementation
-    plan (Phase 1 — real adapter layer):
+      - CircleWalletsReal — MPC signing + contract execution + balances
+      - ArcReal           — Arc reads (web3) + trace commits (via Circle)
+      - NanopaymentReal   — IPFS pinning via Pinata
+      - PolymarketReal    — V2 CLOB reads + builder-attributed orders
+      - USYCReal          — ERC-4626 Teller subscribe/redeem + NAV/APY
+      - GatewayReal       — Circle Gateway cross-chain USDC
+      - HyperliquidReal   — perp hedge venue (raw-key signed)
 
-      Arc, Circle Wallets/signing, Polymarket V2, Gateway, USYC,
-      Nanopayment sidecar, Hyperliquid.
+    Some write paths are gated at runtime on external prerequisites
+    (Polymarket pUSD collateral, USYC Teller role grant, Gateway deposit,
+    HL account funding) and raise a clear error until those are satisfied.
     """
-    raise NotImplementedError(
-        "Real adapters not wired yet. Implement adapters/real/ per "
-        "docs/LIVE_IMPLEMENTATION_PLAN.md Phase 1 and wire them here."
+    from adapters.real.arc import ArcReal
+    from adapters.real.circle_wallets import CircleWalletsReal
+    from adapters.real.gateway import GatewayReal
+    from adapters.real.hyperliquid import HyperliquidReal
+    from adapters.real.nanopayment import NanopaymentReal
+    from adapters.real.polymarket import PolymarketReal
+    from adapters.real.usyc import USYCReal
+
+    wallets = CircleWalletsReal()
+    return Adapters(
+        polymarket=PolymarketReal(),
+        hyperliquid=HyperliquidReal(),
+        wallets=wallets,
+        usyc=USYCReal(wallets),
+        gateway=GatewayReal(wallets),
+        nanopayment=NanopaymentReal(),
+        arc=ArcReal(wallets),
     )
 
 

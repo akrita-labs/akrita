@@ -22,6 +22,10 @@ dependencies = [
     "asyncpg>=0.29,<1.0",
     "alembic>=1.13,<2.0",
     "redis>=5.0,<6.0",
+    "web3>=7.0,<8.0",
+    "eth-account>=0.13",
+    "py-clob-client>=0.34",
+    "hyperliquid-python-sdk>=0.20",
 ]
 
 [project.optional-dependencies]

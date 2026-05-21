@@ -12,13 +12,13 @@ predates the action — no post-hoc rationalization possible.
 """
 from __future__ import annotations
 
-import os
 import time
 from dataclasses import dataclass
 from typing import Any
 
 from adapters import get_adapters
 from shared.canonical import canonical_json, trace_hash
+from shared.config import settings
 from shared.models import (
     AgentRole,
     HedgeDecision,
@@ -67,7 +67,7 @@ class TracePipeline:
             technical=technical,
             conclusion=conclusion,
             risk_gate=risk_result,
-            model=os.environ.get("AKRITA_REASONER_MODEL", "unset"),
+            model=settings.akrita_reasoner_model or "unset",
             computation_ms=0,
             ts_ms=int(time.time() * 1000),
         )
@@ -80,20 +80,14 @@ class TracePipeline:
         # 2. Pin to IPFS via Nanopayment
         cid = await adapters.nanopayment.pin_to_ipfs(body_bytes)
 
-        # 3. Commit (decision_id, hash, cid) to TraceRegistry on Arc
-        from eth_abi import encode as abi_encode
-
-        # commitTrace(uint256 agentId, uint256 decisionId, bytes32 traceHash, string ipfsCid)
-        calldata = abi_encode(
-            ["uint256", "uint256", "bytes32", "string"],
-            [self._agent_id(decision.agent_role), decision.decision_id,
-             bytes.fromhex(body_hash[2:]), cid],
-        )
-
-        tx = await adapters.arc.submit_tx(
-            wallet_id="trace-keeper",
-            contract_addr=self.trace_registry_addr,
-            calldata=calldata,
+        # 3. Commit (agentId, decisionId, sha256 hash, CID) to TraceRegistry on
+        #    Arc. ArcReal signs via the Circle MPC trace-keeper wallet and
+        #    encodes the call from the ABI signature — no manual calldata.
+        tx = await adapters.arc.commit_trace(
+            agent_id=self._agent_id(decision.agent_role),
+            decision_id=decision.decision_id,
+            trace_hash_hex=body_hash,
+            ipfs_cid=cid,
         )
 
         return TraceCommit(
