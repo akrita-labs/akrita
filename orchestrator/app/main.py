@@ -12,12 +12,21 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from orchestrator.app.config import settings
 from orchestrator.app.db.session import init_engine, shutdown_engine
 from orchestrator.app.redis_client import init_redis, shutdown_redis
-from orchestrator.app.routers import decisions, live, state as state_router, traces
+from orchestrator.app.routers import (
+    builder,
+    decisions,
+    leaderboard,
+    live,
+    state as state_router,
+    traces,
+    users,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -69,6 +78,10 @@ app.include_router(decisions.router, prefix="/decisions", tags=["decisions"])
 app.include_router(state_router.router, prefix="/state", tags=["state"])
 app.include_router(traces.router, prefix="/traces", tags=["traces"])
 app.include_router(live.router, prefix="/live", tags=["live"])
+# Multi-tenant: identity, per-user builder onboarding, public leaderboard.
+app.include_router(users.router, prefix="/api/users", tags=["users"])
+app.include_router(builder.router, prefix="/api/builder", tags=["builder"])
+app.include_router(leaderboard.router, prefix="/api/leaderboard", tags=["leaderboard"])
 
 
 @app.get("/health", tags=["meta"])
@@ -81,4 +94,29 @@ async def health() -> dict:
 # JSON routes above first, then mount static last as the catch-all.
 frontend_dir = pathlib.Path(__file__).resolve().parents[2] / "frontend"
 if (frontend_dir / "index.html").exists():
+
+    def _frontend_page(file_name: str) -> FileResponse:
+        return FileResponse(frontend_dir / file_name)
+
+    @app.get("/dashboard", include_in_schema=False)
+    async def dashboard_page() -> FileResponse:
+        return _frontend_page("dashboard.html")
+
+    @app.get("/builder", include_in_schema=False)
+    async def builder_page() -> FileResponse:
+        return _frontend_page("builder.html")
+
+    @app.get("/leaderboard", include_in_schema=False)
+    async def leaderboard_page() -> FileResponse:
+        return _frontend_page("leaderboard.html")
+
+    @app.get("/about", include_in_schema=False)
+    async def about_page() -> FileResponse:
+        return _frontend_page("about.html")
+
+    @app.get("/trace", include_in_schema=False)
+    @app.get("/trace/{trace_ref:path}", include_in_schema=False)
+    async def trace_page(trace_ref: str = "") -> FileResponse:
+        return _frontend_page("trace.html")
+
     app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
