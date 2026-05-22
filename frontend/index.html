@@ -3,149 +3,106 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AKRITA — Frontier Keeper</title>
+    <title>AKRITA AKRITAI — Frontier Keeper</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/static/styles.css" />
 </head>
-<body>
-    <!-- Background texture overlay -->
-    <div class="parchment-overlay"></div>
+<body class="home-page">
+    <div class="parchment-overlay" aria-hidden="true"></div>
 
-    <header class="masthead">
-        <div class="masthead-inner">
-            <div class="brand">
-                <div class="brand-mark">
-                    <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                        <!-- Stylized Akritai sigil: sword crossed over wheat sheaf -->
-                        <g stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round">
-                            <line x1="30" y1="6" x2="30" y2="48" />
-                            <line x1="20" y1="40" x2="40" y2="40" />
-                            <line x1="22" y1="50" x2="38" y2="50" />
-                            <path d="M 15 18 Q 30 24, 45 18" />
-                            <path d="M 17 22 Q 30 28, 43 22" />
-                            <circle cx="30" cy="6" r="1.5" fill="currentColor" />
-                        </g>
-                    </svg>
-                </div>
-                <div class="brand-text">
-                    <h1>AKRITA</h1>
-                    <p class="brand-tagline">Frontier-Keeper Protocol</p>
-                </div>
-            </div>
-            <div class="meta-strip">
-                <span class="meta-item"><label>Connection</label><span id="ws-status" class="value status-pending">…</span></span>
-                <span class="meta-item"><label>Block</label><span id="arc-block" class="value">—</span></span>
-            </div>
-        </div>
+    <header class="home-header">
+        <a class="home-brand" href="/" aria-label="AKRITA home">
+            <span class="home-brand-name">AKRITA</span>
+            <span class="home-brand-sub">AKRITAI</span>
+        </a>
+
+        <nav class="home-nav" aria-label="Primary">
+            <a href="/dashboard.html">Dashboard</a>
+            <span aria-hidden="true">·</span>
+            <a href="/trace.html">Trace Viewer</a>
+            <span aria-hidden="true">·</span>
+            <a href="/builder.html">Builder</a>
+            <span aria-hidden="true">·</span>
+            <a href="/about.html">About</a>
+            <span aria-hidden="true">·</span>
+            <a href="https://github.com/akrita-labs/akrita/blob/main/docs/ARCHITECTURE.md">Documentation</a>
+            <span aria-hidden="true">·</span>
+            <a href="https://github.com/akrita-labs/akrita">Github</a>
+        </nav>
+
+        <a class="home-enter" href="/dashboard.html">Enter Keeper</a>
     </header>
 
-    <main>
-        <!-- Hero / thesis strip -->
-        <section class="thesis">
-            <div class="thesis-line">
-                <span class="dim">Stratiotika Ktemata —</span>
-                capital that <em>farms</em> in peacetime,
-                <em>fights</em> in wartime.
+    <main class="home-shell">
+        <section class="hero-copy" aria-labelledby="home-title">
+            <p class="home-kicker">Agora Agents Hackathon · Canteen × Circle × Arc · 2026</p>
+
+            <h1 id="home-title" class="home-title" aria-label="Capital that farms when it is not fighting.">
+                <span class="illuminated-initial" aria-hidden="true">C</span>
+                <span class="title-lines" aria-hidden="true">apital that<br />farms when it<br />is not fighting.</span>
+            </h1>
+
+            <p class="hero-text">
+                Three autonomous agents — NOMOS, SPATHA, AGROS — keep the frontier.
+                Idle collateral sits in USYC earning treasury yield; pUSD margin moves
+                only when fills are imminent. Every decision hashed and anchored on Arc.
+                A keeper modeled on the Byzantine <em>stratiotika ktemata</em>: capital
+                that defends a frontier by remaining productive between engagements.
+            </p>
+
+            <div class="home-divider" aria-hidden="true">
+                <span></span>
+                <b>✠</b>
+                <span></span>
             </div>
-            <div class="thesis-sub">
-                NOMOS quotes the frontier · SPATHA contains the breach · AGROS works the field
+
+            <div class="hero-actions" aria-label="Primary actions">
+                <a class="hero-button hero-button-primary" href="/dashboard.html">View Live Keeper</a>
+                <a class="hero-button hero-button-secondary" href="https://github.com/akrita-labs/akrita/blob/main/docs/ARCHITECTURE.md">Read the Trace Protocol</a>
             </div>
         </section>
 
-        <!-- KPI Row -->
-        <section class="kpi-grid">
-            <div class="kpi-card">
-                <div class="kpi-label">USYC Balance</div>
-                <div class="kpi-value" id="kpi-usyc">—</div>
-                <div class="kpi-sub" id="kpi-usyc-apy">apy: —</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-label">Operating USDC</div>
-                <div class="kpi-value" id="kpi-usdc">—</div>
-                <div class="kpi-sub">Arc &middot; available</div>
-            </div>
-            <div class="kpi-card highlight">
-                <div class="kpi-label">Builder Fees Accrued</div>
-                <div class="kpi-value" id="kpi-fees">$0.00</div>
-                <div class="kpi-sub">cumulative · USDC</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-label">Total Volume Attributed</div>
-                <div class="kpi-value" id="kpi-volume">$0.00</div>
-                <div class="kpi-sub">Polymarket V2</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-label">Traces Committed</div>
-                <div class="kpi-value" id="kpi-traces">0</div>
-                <div class="kpi-sub">on-chain on Arc</div>
-            </div>
-        </section>
+        <section class="keeper-plate" aria-label="Annotated frontier keeper figure">
+            <span class="plate-flower plate-flower-tl" aria-hidden="true">✾</span>
+            <span class="plate-flower plate-flower-tr" aria-hidden="true">✾</span>
+            <span class="plate-flower plate-flower-bl" aria-hidden="true">✾</span>
+            <span class="plate-flower plate-flower-br" aria-hidden="true">✾</span>
 
-        <!-- Three agent panels -->
-        <section class="agent-grid">
-            <article class="agent-card" data-agent="nomos">
-                <header>
-                    <div class="agent-mark">NOMOS</div>
-                    <div class="agent-greek">νόμος</div>
-                    <div class="agent-role">Pricing · the frontier law</div>
-                </header>
-                <div class="agent-feed" id="feed-nomos">
-                    <div class="empty-state">awaiting first quote…</div>
-                </div>
-            </article>
+            <img class="keeper-figure" src="/static/assets/frontier-keeper.png" alt="Sepia manuscript illustration of a Byzantine frontier keeper holding a plow and sword." />
 
-            <article class="agent-card" data-agent="spatha">
-                <header>
-                    <div class="agent-mark">SPATHA</div>
-                    <div class="agent-greek">σπάθα</div>
-                    <div class="agent-role">Hedge · the cavalry sword</div>
-                </header>
-                <div class="agent-feed" id="feed-spatha">
-                    <div class="empty-state">standing watch…</div>
-                </div>
-            </article>
-
-            <article class="agent-card" data-agent="agros">
-                <header>
-                    <div class="agent-mark">AGROS</div>
-                    <div class="agent-greek">ἀγρός</div>
-                    <div class="agent-role">Treasury · the cultivated field</div>
-                </header>
-                <div class="agent-feed" id="feed-agros">
-                    <div class="empty-state">tending the field…</div>
-                </div>
-            </article>
-        </section>
-
-        <!-- Recent fills -->
-        <section class="fills-panel">
-            <header>
-                <h2>Recent Fills</h2>
-                <span class="hint">Polymarket V2 attribution events</span>
-            </header>
-            <div class="fills-list" id="fills-list">
-                <div class="empty-state">no fills yet</div>
+            <div class="figure-label label-akrites">
+                <span>ΑΚΡΙΤΗΣ —</span>
+                <em>the frontier-keeper</em>
             </div>
-        </section>
-
-        <!-- Trace inspector -->
-        <section class="trace-panel">
-            <header>
-                <h2>Trace Registry</h2>
-                <span class="hint">Every decision · sha256 → IPFS → Arc</span>
-            </header>
-            <div class="trace-list" id="trace-list">
-                <div class="empty-state">no traces committed yet</div>
+            <div class="figure-label label-agros">
+                <span>ΑΓΡΟΣ —</span>
+                <em>the field that yields</em>
             </div>
+            <div class="figure-label label-nomos">
+                <span>ΝΟΜΟΣ —</span>
+                <em>the law inscribed</em>
+            </div>
+            <div class="figure-label label-spatha">
+                <span>ΣΠΑΘΑ —</span>
+                <em>the cut at<br />the boundary</em>
+            </div>
+
+            <p class="plate-caption">Composite figure after Cappadocia, c. 950 CE</p>
         </section>
     </main>
 
-    <footer>
-        <span class="dim">AKRITA · Agora Agents Hackathon · Canteen × Circle × Arc · May 2026</span>
+    <footer class="home-footer">
+        <p>ARC TESTNET — <em>this is not financial advice</em></p>
+        <div class="footer-flourish" aria-hidden="true">
+            <span></span>
+            <b>✾</b>
+            <b>✾</b>
+            <b>✾</b>
+            <span></span>
+        </div>
+        <p>© 2026 SibylFi · Built for the Agora hackathon</p>
     </footer>
-
-    <script src="/static/app.js"></script>
 </body>
 </html>
