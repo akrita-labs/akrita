@@ -6,11 +6,21 @@ territory. NOMOS sits on the protocol frontier, quoting both sides
 of subscribed Polymarket V2 markets to capture builder-code
 attribution fees. It governs the bounds of the inventory.
 
-Loop: every PRICING_QUOTE_INTERVAL_SEC, for each subscribed market:
-  1. Fetch orderbook + recent fills
-  2. Compute deterministic microprice + inventory-adjusted target
-  3. Clamp to tradeable bounds
-  4. POST /decisions/pricing to the orchestrator
+Multi-tenant loop: every PRICING_QUOTE_INTERVAL_SEC,
+  1. Fetch the set of enabled nomos instances from the orchestrator.
+     (Falls back to a single synthetic "system" instance using NomosParams()
+     defaults + env-configured markets so single-tenant behavior never
+     regresses if the endpoint is unavailable.)
+  2. For each instance (skipping any with kill_switch on):
+       - validate its params, then for each subscribed market that passes the
+         whitelist and is not breaker-tripped:
+           a. Fetch orderbook + recent fills
+           b. Compute a deterministic inventory-tilted quote (pricing.compute_quote)
+           c. Tag the decision with user_id + agent_instance_id, author a one-line
+              narrative, and POST /decisions/pricing to the orchestrator.
+
+The quote math lives in the pure, import-safe `pricing` module; this file is the
+network/IO shell around it.
 """
 from __future__ import annotations
 
@@ -21,9 +31,11 @@ import time
 import httpx
 
 from adapters import get_adapters
+from agents.nomos import pricing
 from shared.config import settings
 from shared.canonical import trace_hash
-from shared.models import AppetiteProfile, PricingDecision
+from shared.models import SYSTEM_USER_ID, AppetiteProfile, PricingDecision
+from shared.params import NomosParams, validate_params
 
 logging.basicConfig(
     level=logging.INFO,
@@ -47,13 +59,70 @@ def _next_id() -> int:
     return _decision_counter
 
 
-async def compute_quote(market_id: str) -> PricingDecision | None:
-    """Five-step pricing pipeline.
+async def fetch_instances() -> list[dict]:
+    """Fetch enabled nomos instances from the orchestrator.
 
-    1. Pull orderbook + recent fills
-    2. Deterministic microprice
-    3. Inventory skew
-    4. Bounds clamp, then construct decision
+    Response shape: {"instances": [{"id","user_id","archetype","params",
+    "kill_switch","enabled"}]}. On any failure (network, non-200, empty list)
+    falls back to a single synthetic "system" instance carrying NomosParams()
+    defaults and the env-configured markets, so single-tenant behavior never
+    regresses.
+    """
+    fallback = [
+        {
+            "id": None,
+            "user_id": SYSTEM_USER_ID,
+            "archetype": "nomos",
+            "params": {},  # validate_params -> NomosParams() defaults
+            "kill_switch": False,
+            "enabled": True,
+            "markets": [m for m in SUBSCRIBED_MARKETS if m],
+        }
+    ]
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(
+                f"{ORCHESTRATOR_URL}/api/instances",
+                params={"archetype": "nomos", "enabled": "true"},
+            )
+            if resp.status_code >= 400:
+                log.warning("GET /api/instances failed: %d — falling back to system instance",
+                            resp.status_code)
+                return fallback
+            instances = resp.json().get("instances") or []
+    except httpx.RequestError as e:
+        log.warning("GET /api/instances unreachable (%s) — falling back to system instance", e)
+        return fallback
+
+    if not instances:
+        return fallback
+    return instances
+
+
+def _instance_markets(inst: dict) -> list[str]:
+    """Markets an instance quotes. The instances API does not (yet) carry a
+    per-instance subscription list, so user instances quote the same
+    env-configured markets the operator subscribes; the synthetic fallback
+    instance carries them explicitly."""
+    markets = inst.get("markets")
+    if markets:
+        return [m for m in markets if m]
+    return [m for m in SUBSCRIBED_MARKETS if m]
+
+
+async def compute_quote(
+    market_id: str,
+    params: NomosParams,
+    inst: dict,
+) -> PricingDecision | None:
+    """Build a tenant-tagged PricingDecision for one market.
+
+    1. Pull orderbook (skip if one-sided / empty).
+    2. Derive mid + max_spread from the live book.
+    3. Inventory ratio — neutral (0.5) until the live inventory read is wired
+       (see docs/LIVE_IMPLEMENTATION_PLAN.md Phase 4).
+    4. Quote via the pure pricing.compute_quote, tag tenant identity, author a
+       one-line narrative.
     """
     adapters = get_adapters()
 
@@ -61,39 +130,31 @@ async def compute_quote(market_id: str) -> PricingDecision | None:
     if not book.bids or not book.asks:
         return None
 
-    # 2. Deterministic microprice
     mid = book.microprice
-    fair_spread = max(book.spread_bps / 10000, 0.005)
+    # max_spread is the venue's available spread budget in probability units;
+    # floor it at MIN_SPREAD so a momentarily-locked book still quotes.
+    max_spread = max(book.spread_bps / 10000, pricing.MIN_SPREAD)
 
-    # 3. Inventory skew — neutral until the live inventory read is wired
-    #    (see docs/LIVE_IMPLEMENTATION_PLAN.md Phase 4).
-    inv = 0.0
-    skew = inv * 0.0001
+    # Inventory ratio — neutral until the live inventory read is wired.
+    inv_ratio = params.inventory_target_pct
 
-    target_bid = mid - fair_spread / 2 - skew
-    target_ask = mid + fair_spread / 2 - skew
+    quote = pricing.compute_quote(mid, max_spread, inv_ratio, params)
 
-    # 4. Clamp to tradeable bounds
-    final_bid = max(0.02, min(0.98, target_bid))
-    final_ask = max(0.02, min(0.98, target_ask))
-
-    # Enforce bid < ask with minimum spread
-    if final_ask - final_bid < 0.005:
-        final_bid = max(0.02, mid - 0.0025)
-        final_ask = min(0.98, mid + 0.0025)
-
-    appetite_size = {
-        AppetiteProfile.CONSERVATIVE: 50,
-        AppetiteProfile.BALANCED: 100,
-        AppetiteProfile.AGGRESSIVE: 200,
-    }
-    size = float(appetite_size[APPETITE])
+    offset = params.quote_spread_bps_offset_to_max_spread
+    target = params.inventory_target_pct
+    narrative = (
+        f"Quoting {market_id[:10]}…: bid {quote['bid']:.3f}/ask {quote['ask']:.3f} "
+        f"at {offset * 100:.0f}% of max-spread; inv {inv_ratio:.0%} vs target {target:.0%}"
+    )
 
     rationale = {
         "midpoint": mid,
-        "spread_bps": book.spread_bps,
-        "inventory_skew": inv,
-        "appetite": APPETITE.value,
+        "max_spread": max_spread,
+        "spread_offset": offset,
+        "inventory_ratio": inv_ratio,
+        "inventory_target": target,
+        "user_id": inst["user_id"],
+        "agent_instance_id": inst.get("id"),
     }
 
     return PricingDecision(
@@ -101,13 +162,16 @@ async def compute_quote(market_id: str) -> PricingDecision | None:
         nonce=int(time.time() * 1_000_000) % 2**31,
         ts_ms=int(time.time() * 1000),
         rationale_hash=trace_hash(rationale),
+        user_id=inst["user_id"],
+        agent_instance_id=inst.get("id"),
         market_id=market_id,
         market_question=await adapters.polymarket.get_market_question(market_id),
-        bid=round(final_bid, 4),
-        ask=round(final_ask, 4),
-        size=size,
-        confidence=0.7,
+        bid=quote["bid"],
+        ask=quote["ask"],
+        size=quote["size"],
+        confidence=quote["confidence"],
         appetite_profile=APPETITE,
+        narrative=narrative,
     )
 
 
@@ -132,29 +196,70 @@ async def submit(decision: PricingDecision) -> None:
             log.error("Orchestrator unreachable: %s", e)
 
 
-async def main() -> None:
-    markets = [m for m in SUBSCRIBED_MARKETS if m]
-    if not markets:
-        log.warning(
-            "NOMOS idle — no SUBSCRIBED_MARKETS configured. Set the env var "
-            "to a comma-separated list of bytes32 market IDs to start quoting."
-        )
-        while True:
-            await asyncio.sleep(QUOTE_INTERVAL)
+async def _quote_instance(inst: dict) -> None:
+    """Quote every eligible market for one tenant instance."""
+    if inst.get("kill_switch"):
+        log.info("Instance %s kill_switch on — skipping", inst.get("id"))
+        return
 
-    log.info("NOMOS starting — subscribed to %d markets, appetite=%s",
-             len(markets), APPETITE.value)
+    try:
+        params = validate_params("nomos", inst.get("params") or {})
+    except Exception as e:  # invalid stored params should not stall the loop
+        log.warning("Instance %s has invalid params (%s) — skipping", inst.get("id"), e)
+        return
+
+    markets = _instance_markets(inst)
+    for market_id in markets:
+        # Whitelist gate. We do not have live per-market tags from the book yet,
+        # so apply the operator's configured tags as the market's tags — a market
+        # the operator subscribed inherits the operator's whitelist. This keeps
+        # the gate active (fail-closed on an empty whitelist) without inventing a
+        # tag feed.
+        market_tags = params.market_whitelist_tags
+        if not pricing.market_allowed(market_tags, params.market_whitelist_tags):
+            continue
+
+        # Per-market breaker. Fill-reconciliation (PnL per market) is deferred —
+        # it will feed market_loss here. Until then pass 0.0 so the breaker is
+        # wired but never trips spuriously.
+        market_loss = 0.0
+        if pricing.per_market_breaker_tripped(market_loss, params.daily_loss_limit_usd):
+            log.info("Instance %s market %s breaker tripped — skipping",
+                     inst.get("id"), market_id[:10])
+            continue
+
+        try:
+            decision = await compute_quote(market_id, params, inst)
+            if decision is not None:
+                await submit(decision)
+        except Exception as e:
+            log.exception("compute_quote/submit failed for %s: %s", market_id[:10], e)
+
+
+async def main() -> None:
+    log.info("NOMOS starting — multi-tenant pricing loop, appetite=%s", APPETITE.value)
 
     while True:
-        for market_id in markets:
+        instances = await fetch_instances()
+        total_markets = sum(len(_instance_markets(i)) for i in instances)
+        if total_markets == 0:
+            log.warning(
+                "NOMOS idle — no markets to quote across %d instance(s). Set "
+                "SUBSCRIBED_MARKETS to a comma-separated list of bytes32 market "
+                "IDs (or register user instances with markets) to start quoting.",
+                len(instances),
+            )
+            await asyncio.sleep(QUOTE_INTERVAL)
+            continue
+
+        for inst in instances:
             try:
-                decision = await compute_quote(market_id)
-                if decision is not None:
-                    await submit(decision)
+                await _quote_instance(inst)
             except Exception as e:
-                log.exception("compute_quote/submit failed for %s: %s",
-                              market_id[:10], e)
-            await asyncio.sleep(QUOTE_INTERVAL / max(len(markets), 1))
+                log.exception("instance %s loop failed: %s", inst.get("id"), e)
+            # Spread the work across the interval so we re-quote roughly once
+            # per QUOTE_INTERVAL regardless of how many markets are live.
+            await asyncio.sleep(QUOTE_INTERVAL / max(total_markets, 1))
 
 
 if __name__ == "__main__":

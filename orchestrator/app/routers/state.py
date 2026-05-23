@@ -29,18 +29,48 @@ async def get_inventory_market(market_id: str) -> dict:
 @router.get("/balances")
 async def get_balances() -> dict:
     adapters = get_adapters()
-    out = {}
-    for wallet in ["nomos-keeper", "spatha-keeper", "agros-keeper", "trace-keeper"]:
-        out[wallet] = {}
-        for chain in ["arc", "polygon", "hyperliquid"]:
+    wallets = adapters.wallets
+    out: dict = {}
+
+    # Legacy agent-facing alias -> (role, {short_chain: circle_blockchain}).
+    roles = {
+        "nomos-keeper": "pricing",
+        "spatha-keeper": "hedge",
+        "agros-keeper": "treasury",
+        "trace-keeper": "trace",
+    }
+    chains = {"arc": "ARC-TESTNET", "polygon": "MATIC-AMOY"}
+
+    for alias, role in roles.items():
+        out[alias] = {}
+        for short, circle_chain in chains.items():
             try:
-                bal = await adapters.wallets.get_balance(wallet, chain)
-                out[wallet][chain] = bal
+                wid = wallets.wallet_id(role, circle_chain)
+                out[alias][short] = await wallets.get_balance(wid, circle_chain)
             except Exception:
                 pass
+
+    # Circle doesn't track USYC; read it directly from the token via USYCReal.
+    try:
+        treasury_wid = wallets.wallet_id("treasury", "ARC-TESTNET")
+        usyc_bal = await adapters.usyc.get_balance(treasury_wid)
+        out.setdefault("agros-keeper", {}).setdefault("arc", {})["USYC"] = usyc_bal
+    except Exception:
+        pass
+
     out["usyc_apy"] = await adapters.usyc.get_current_yield_apy()
     out["usyc_nav"] = await adapters.usyc.get_nav_per_share()
     return out
+
+
+@router.get("/traces")
+async def get_traces(limit: int = 20) -> dict:
+    """Committed traces straight from the traces table (the on-chain anchor
+    record), independent of whether the decision's execution succeeded."""
+    return {
+        "count": await state.count_traces(),
+        "traces": await state.list_recent_traces(limit=limit),
+    }
 
 
 @router.get("/fills")

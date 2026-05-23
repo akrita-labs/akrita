@@ -35,7 +35,7 @@
    │                  ▼                          ▼                    │
    │           ┌──────────────┐         ┌────────────────┐            │
    │           │  Adapters    │         │  WebSocket /   │            │
-   │           │  (live I/O)  │         │  state for UI  │            │
+   │           │  (external)  │         │  state for UI  │            │
    │           └──────────────┘         └────────────────┘            │
    └──────────────────────────────────────────────────────────────────┘
               │            │                  │
@@ -170,25 +170,23 @@ CREATE TABLE decisions (
 | USYC redeem latency | AGROS holds back on subscribe until queue clears | `SAFETY_MULTIPLIER` knob (default 1.5x projected outflow) |
 | Arc finality lag | Trace commit blocks for ~1s | `submit_tx` has `await asyncio.sleep` capped at 5s |
 
-## 7. Demo evidence
+## 7. The 30-second demo flow
 
-There is no synthetic demo endpoint. Demo Mode replays *captured real testnet/mainnet artifacts* and is never a substitute for the live path (see `docs/LIVE_IMPLEMENTATION_PLAN.md`).
-
-A live decision chain produces, end to end:
-
-```text
-NOMOS quote      →  trace pinned → commit on Arc → quote on Polymarket V2
-OrderFilled      →  Polygon event with our bytes32 builder code → fee accrues
-SPATHA fires     →  inventory breach → real hedge opens on the chosen venue
-AGROS sweeps     →  surplus USDC subscribed into USYC
+```
+t=0s   POST /demo/run    →  NOMOS quote (bid 0.605, ask 0.635, size 100)
+                            → trace pinned → commit on Arc → quote on Polymarket
+t=2s   simulated fill   →  OrderFilled emitted, builder fee accrued
+t=4s   SPATHA fires     →  short BTC-PERP 0.05 with 250 USDC margin on HL
+                            → trace pinned → commit on Arc → position open
+t=6s   AGROS sweeps     →  USYC subscribe 500 USDC
+                            → trace pinned → commit on Arc → USYC balance up
 ```
 
-Each step is third-party verifiable on the dashboard, with click-through to:
-
+In the live demo, judges see this same chain on the dashboard, with click-through to:
 - Polygonscan tx (OrderFilled with our `builderCode` in the indexed param)
 - Arc Explorer tx (TraceRegistry commit)
 - IPFS body (verifiable sha256 match)
-- Hedge venue position page
+- HL position page
 - USYC NAV ticker incrementing in real time
 
 Every artifact is third-party verifiable. None of it depends on trusting the team.

@@ -31,6 +31,21 @@ from shared.config import settings
 _WALLET_ID_BY_ROLE_CHAIN: dict[tuple[str, str], str] = {}
 _WALLET_ADDR_BY_ROLE: dict[str, str] = {}
 
+# Per-user wallet override hook, keyed by (user_id, role, chain).
+#
+# v1 design: AKRITA runs *shared keeper wallets* per role (pricing/hedge/
+# treasury/trace). Per-user Circle wallets are NOT provisioned yet, so this
+# map is intentionally empty. `wallet_id_for` consults it for the roles where
+# attribution matters ("pricing", "hedge") and otherwise — and for every role
+# today — falls back to the shared keeper via `wallet_id(role, chain)`.
+# Provisioning real per-user wallets and populating this map is future work.
+_USER_WALLET_ID_OVERRIDES: dict[tuple[str, str, str], str] = {}
+
+# Roles where on-chain attribution is meaningfully per-user (these are the
+# only ones a per-user wallet override would ever apply to). Trace/treasury
+# stay on the shared keeper.
+_PER_USER_ATTRIBUTION_ROLES = {"pricing", "hedge"}
+
 
 def _build_wallet_maps() -> None:
     _WALLET_ID_BY_ROLE_CHAIN.update(
@@ -94,6 +109,36 @@ class CircleWalletsReal:
         if not wid:
             raise KeyError(f"no Circle wallet for role={role!r} chain={chain!r}")
         return wid
+
+    def wallet_id_for(
+        self, user_id: str | None, role: str, chain: str = "ARC-TESTNET"
+    ) -> str:
+        """Resolve the Circle wallet id for a (user, role, chain).
+
+        v1 design — per-user where attribution matters, shared keeper
+        everywhere else:
+
+          * For roles where on-chain attribution is genuinely per-user
+            ("pricing", "hedge") AND ``user_id`` is provided AND a per-user
+            wallet override has been provisioned for that (user, role, chain),
+            return the per-user wallet.
+          * Otherwise — including every role today, since per-user Circle
+            wallets are not provisioned yet — fall back to the shared keeper
+            wallet via ``wallet_id(role, chain)``. Trace/treasury writes always
+            use the shared keeper.
+
+        ``user_id is None`` always resolves to the shared keeper. Per-user
+        provisioning (populating ``_USER_WALLET_ID_OVERRIDES``) is future work;
+        this method's contract is forward-compatible with it.
+        """
+        if user_id is not None:
+            normalized = _normalize_role(role)
+            if normalized in _PER_USER_ATTRIBUTION_ROLES:
+                override = _USER_WALLET_ID_OVERRIDES.get((user_id, normalized, chain))
+                if override:
+                    return override
+        # Shared keeper fallback (the documented v1 default).
+        return self.wallet_id(role, chain)
 
     def wallet_address(self, role: str) -> str:
         addr = _WALLET_ADDR_BY_ROLE.get(_normalize_role(role), "")

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AKRITA AKRITAI — Operator Profile</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/styles.css" />
+    <style>
+        /* Public operator profile — shareable, on the shared parchment tokens. */
+        .ap-shell { max-width: 1040px; margin: 0 auto; padding: 1.6rem 1.4rem 4rem; }
+
+        .ap-emblem { width: 96px; height: 96px; margin: 0 auto 0.8rem; display: flex; align-items: center; justify-content: center;
+            border: 5px double var(--page-gold, #9d6f1d); border-radius: 50%; color: var(--crimson);
+            font-family: var(--font-display); font-size: 3rem; font-weight: 700;
+            background: radial-gradient(circle at 50% 48%, rgba(157,115,37,0.18) 0 1px, transparent 1px 14px),
+                linear-gradient(135deg, rgba(255,247,224,0.88), rgba(227,205,157,0.46));
+            box-shadow: inset 0 0 0 6px rgba(255,247,224,0.82); }
+
+        .ap-hero { text-align: center; margin-bottom: 1.6rem; }
+        .ap-hero h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(2rem, 5vw, 3.2rem); margin: 0 0 0.2rem;
+            color: var(--page-ink, #17120e); letter-spacing: 0.03em; }
+        .ap-handle { font-family: var(--font-mono); font-size: 0.9rem; color: var(--gold-deep); letter-spacing: 0.06em; margin: 0 0 0.4rem; }
+        .ap-id { display: inline-block; font-family: var(--font-mono); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.12em;
+            color: var(--moss); border: 1px solid var(--moss); border-radius: 2px; padding: 0.18rem 0.6rem; }
+        .ap-id.system { color: var(--crimson); border-color: var(--crimson); }
+        .ap-divider { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 1rem; color: var(--page-gold);
+            max-width: 540px; margin: 1.2rem auto 1.6rem; }
+        .ap-divider span { height: 1px; background: var(--page-rule, rgba(124,82,25,0.5)); }
+        .ap-divider b { font-family: var(--font-display); font-size: 1.3rem; }
+
+        .ap-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.9rem; margin-bottom: 1.6rem; }
+        @media (max-width: 760px) { .ap-stats { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 460px) { .ap-stats { grid-template-columns: 1fr; } }
+        .ap-stat { position: relative; background: var(--vellum); border: 1px solid var(--rule); border-radius: var(--rad-md);
+            padding: 1rem 0.9rem; text-align: center; box-shadow: inset 0 0 0 1px rgba(176,138,60,0.12); }
+        .ap-stat b { display: block; font-family: var(--font-display); font-weight: 700; font-size: 1.7rem; line-height: 1.1;
+            color: var(--page-ink, #17120e); font-variant-numeric: tabular-nums; }
+        .ap-stat .agent-tag { color: var(--gold-deep); }
+        .ap-stat span { display: block; font-family: var(--font-mono); font-size: 0.6rem; text-transform: uppercase;
+            letter-spacing: 0.14em; color: var(--ink-faded); margin-top: 0.4rem; }
+        .ap-stat.ticker b { color: var(--moss); }
+
+        .ap-panel { position: relative; background: var(--parchment); border: 1px solid var(--parchment-edge); border-radius: var(--rad-md);
+            padding: 1.3rem 1.3rem 1rem; box-shadow: 0 2px 18px rgba(26,34,56,0.07); margin-bottom: 1.4rem; }
+        .ap-panel h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.4rem; letter-spacing: 0.05em; margin: 0 0 1rem;
+            text-align: center; color: var(--page-ink, #17120e); }
+        .ap-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem 1.4rem; font-family: var(--font-mono); font-size: 0.86rem; }
+        @media (max-width: 560px) { .ap-rows { grid-template-columns: 1fr; } }
+        .ap-rows .r { display: flex; justify-content: space-between; border-bottom: 1px dotted var(--rule); padding: 0.3rem 0; }
+        .ap-rows .r dt { color: var(--ink-soft); text-transform: uppercase; font-size: 0.66rem; letter-spacing: 0.08em; }
+        .ap-rows .r dd { margin: 0; color: var(--ink); font-weight: 500; }
+        .ap-rows .r dd.pos { color: var(--moss); }
+        .ap-rows .r dd.neg { color: var(--crimson); }
+
+        .ap-trace { text-align: center; font-family: var(--font-mono); font-size: 0.84rem; }
+        .ap-trace .hash { color: var(--gold-deep); }
+        .ap-trace a { color: var(--gold-deep); text-decoration: none; border-bottom: 1px dotted var(--gold); }
+        .ap-trace a:hover { color: var(--crimson); }
+        .ap-trace .links { margin-top: 0.5rem; }
+
+        .ap-share { display: flex; gap: 0.8rem; justify-content: center; margin-top: 1.4rem; flex-wrap: wrap; }
+        .ap-btn { min-height: 42px; padding: 0 1.4rem; border: 1px solid var(--gold); border-radius: var(--rad-md);
+            font-family: var(--font-display); font-size: 1.05rem; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+            text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
+            background: rgba(255,250,238,0.4); color: #342313; }
+        .ap-empty { text-align: center; color: var(--ink-faded); font-style: italic; padding: 1.4rem; }
+        .ap-foot-note { text-align: center; font-size: 0.78rem; color: var(--ink-faded); margin-top: 0.6rem; font-family: var(--font-mono); }
+    </style>
+</head>
+<body class="builder-page">
+    <div class="parchment-overlay" aria-hidden="true"></div>
+
+    <header class="home-header builder-site-header">
+        <a class="home-brand" href="/" aria-label="AKRITA home">
+            <span class="home-brand-name">AKRITA</span>
+            <span class="home-brand-sub">AKRITAI</span>
+        </a>
+        <nav class="home-nav" aria-label="Primary">
+            <a href="/dashboard.html">Dashboard</a>
+            <span aria-hidden="true">·</span>
+            <a href="/leaderboard.html">Leaderboard</a>
+            <span aria-hidden="true">·</span>
+            <a href="/personalize">Personalize</a>
+            <span aria-hidden="true">·</span>
+            <a href="/about.html">About</a>
+        </nav>
+        <a class="home-enter" href="/dashboard.html">Enter Keeper</a>
+    </header>
+
+    <main class="ap-shell">
+        <div class="ap-hero">
+            <div class="ap-emblem" aria-hidden="true">✠</div>
+            <h1 id="ap-name">Loading…</h1>
+            <p class="ap-handle" id="ap-handle"></p>
+            <span class="ap-id" id="ap-id">ERC-8004 · —</span>
+        </div>
+
+        <div class="ap-divider" aria-hidden="true"><span></span><b>✠</b><span></span></div>
+
+        <section class="ap-stats" aria-label="Headline metrics">
+            <div class="ap-stat"><b id="ap-volume">—</b><span>Attributed Maker Volume</span></div>
+            <div class="ap-stat"><b class="agent-tag" id="ap-brier">—</b><span>NOMOS Brier Score</span></div>
+            <div class="ap-stat ticker"><b id="ap-yield">$0.00</b><span>AGROS Yield Accrued</span></div>
+        </section>
+
+        <section class="ap-panel">
+            <span class="panel-corner corner-tl" aria-hidden="true">✾</span>
+            <span class="panel-corner corner-tr" aria-hidden="true">✾</span>
+            <span class="panel-corner corner-bl" aria-hidden="true">✾</span>
+            <span class="panel-corner corner-br" aria-hidden="true">✾</span>
+            <h2>The Three Agents</h2>
+            <dl class="ap-rows" id="ap-agent-rows">
+                <div class="r"><dt>NOMOS · Builder fees</dt><dd id="ap-fees">—</dd></div>
+                <div class="r"><dt>NOMOS · Fills attributed</dt><dd id="ap-fills">—</dd></div>
+                <div class="r"><dt>SPATHA · Hedges</dt><dd id="ap-hedges">—</dd></div>
+                <div class="r"><dt>SPATHA · Hedge PnL</dt><dd id="ap-hedge-pnl">—</dd></div>
+                <div class="r"><dt>AGROS · Yield accrued</dt><dd id="ap-yield-2">—</dd></div>
+                <div class="r"><dt>Reputation Δ</dt><dd id="ap-rep">—</dd></div>
+                <div class="r"><dt>Trace anchors</dt><dd id="ap-traces">—</dd></div>
+                <div class="r"><dt>Decisions</dt><dd id="ap-decisions">—</dd></div>
+            </dl>
+        </section>
+
+        <section class="ap-panel">
+            <h2>Latest Trace</h2>
+            <div class="ap-trace" id="ap-latest-trace">
+                <span class="ap-empty">No trace anchored yet.</span>
+            </div>
+        </section>
+
+        <div class="ap-share">
+            <button type="button" class="ap-btn" id="ap-copy">Copy Share Link</button>
+            <a class="ap-btn" id="ap-leaderboard-link" href="/leaderboard.html">View Leaderboard</a>
+        </div>
+        <p class="ap-foot-note" id="ap-updated"></p>
+    </main>
+
+    <footer class="builder-footer">
+        <p>ARC TESTNET — <em>this is not financial advice</em></p>
+        <div class="footer-flourish" aria-hidden="true"><span></span><b>✾</b><b>✾</b><b>✾</b><span></span></div>
+        <nav aria-label="Footer links">
+            <a href="/dashboard.html">Dashboard</a>
+            <a href="/leaderboard.html">Leaderboard</a>
+            <a href="/about.html">About</a>
+        </nav>
+    </footer>
+
+    <script src="/static/ticker.js"></script>
+    <script>
+    (function () {
+        var API = window.location.origin;
+        var $ = function (id) { return document.getElementById(id); };
+        var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+            return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+        var short = function (h) { return !h ? "—" : (h.length > 16 ? h.slice(0, 10) + "…" + h.slice(-4) : h); };
+        var fmtUSD = function (v) { return "$" + (Number(v) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+        var fmtNum = function (v) { return (Number(v) || 0).toLocaleString(); };
+
+        // Parse the ERC-8004 id from the path: /akritai/{id} (also accept ?id=).
+        function parseId() {
+            var parts = window.location.pathname.replace(/\/+$/, "").split("/");
+            var last = parts[parts.length - 1];
+            if (last && last !== "akritai" && last !== "akritai.html") return decodeURIComponent(last);
+            var q = new URLSearchParams(window.location.search);
+            return q.get("id") || q.get("erc8004_id") || null;
+        }
+
+        var erc8004Id = parseId();
+        $("ap-id").textContent = "ERC-8004 · " + (erc8004Id != null ? "#" + erc8004Id : "—");
+
+        var tickerCtl = null;
+
+        function matchRow(rows) {
+            if (erc8004Id == null) return rows[0] || null;
+            var idStr = String(erc8004Id);
+            // Match against on-chain agent id first, then user_id, then handle.
+            for (var i = 0; i < rows.length; i++) {
+                if (String(rows[i].onchain_agent_id) === idStr) return rows[i];
+            }
+            for (var j = 0; j < rows.length; j++) {
+                if (String(rows[j].user_id) === idStr || String(rows[j].handle) === idStr) return rows[j];
+            }
+            return null;
+        }
+
+        function renderTrace(lt) {
+            var host = $("ap-latest-trace");
+            if (!lt || !lt.trace_hash) {
+                host.innerHTML = '<span class="ap-empty">No trace anchored yet.</span>';
+                return;
+            }
+            var links = [];
+            if (lt.arc_tx_url) links.push('<a href="' + esc(lt.arc_tx_url) + '" target="_blank" rel="noopener">Arc tx ↗</a>');
+            else if (lt.arc_tx) links.push('<span>Arc tx ' + short(lt.arc_tx) + '</span>');
+            if (lt.ipfs_url) links.push('<a href="' + esc(lt.ipfs_url) + '" target="_blank" rel="noopener">IPFS ↗</a>');
+            else if (lt.cid) links.push('<span>cid ' + short(lt.cid) + '</span>');
+            host.innerHTML =
+                '<div>' + (lt.agent_role ? '<strong>' + esc(String(lt.agent_role).toUpperCase()) + '</strong> · ' : "") +
+                'decision #' + esc(lt.decision_id != null ? lt.decision_id : "—") + '</div>' +
+                '<div class="hash">' + short(lt.trace_hash) + '</div>' +
+                (links.length ? '<div class="links">' + links.join(" · ") + '</div>' : "");
+        }
+
+        function applyRow(r, summary) {
+            if (!r) {
+                $("ap-name").textContent = "Operator not found";
+                $("ap-handle").textContent = erc8004Id != null ? "no operator for #" + erc8004Id : "no operator id in URL";
+                return;
+            }
+            $("ap-name").textContent = r.display_name || r.handle || "Operator";
+            $("ap-handle").textContent = "@" + (r.handle || "—");
+            if (r.onchain_agent_id != null) $("ap-id").textContent = "ERC-8004 · #" + r.onchain_agent_id;
+            if (r.is_system) $("ap-id").classList.add("system");
+
+            $("ap-volume").textContent = fmtUSD(r.attributed_volume_usdc);
+
+            // Brier may be supplied per-row or under by_role; otherwise em-dash.
+            var brier = r.nomos_brier;
+            if (brier == null && r.by_role && r.by_role.nomos) brier = r.by_role.nomos.brier;
+            $("ap-brier").textContent = brier != null ? Number(brier).toFixed(3) : "—";
+
+            $("ap-fees").textContent = fmtUSD(r.builder_fees_usdc);
+            $("ap-fills").textContent = fmtNum(r.fills);
+
+            var hedges = (r.by_role && r.by_role.spatha && (r.by_role.spatha.decisions || r.by_role.spatha.count)) || r.spatha_hedges;
+            $("ap-hedges").textContent = hedges != null ? fmtNum(hedges) : "—";
+            var hpnl = r.spatha_pnl_usdc;
+            if (hpnl == null && r.by_role && r.by_role.spatha) hpnl = r.by_role.spatha.pnl_usdc;
+            var hpEl = $("ap-hedge-pnl");
+            if (hpnl != null) {
+                hpEl.textContent = fmtUSD(hpnl);
+                hpEl.className = Number(hpnl) >= 0 ? "pos" : "neg";
+            } else { hpEl.textContent = "—"; }
+
+            $("ap-traces").textContent = fmtNum(r.trace_count);
+            $("ap-decisions").textContent = fmtNum(r.decisions);
+
+            var rep = r.reputation_delta;
+            if (rep == null && r.by_role && r.by_role.nomos) rep = r.by_role.nomos.reputation_delta;
+            var repEl = $("ap-rep");
+            if (rep != null) {
+                repEl.textContent = (Number(rep) >= 0 ? "+" : "") + Number(rep).toFixed(2);
+                repEl.className = Number(rep) >= 0 ? "pos" : "neg";
+            } else { repEl.textContent = "—"; }
+
+            // AGROS yield accrued — prefer an explicit field; else derive a
+            // figure from volume so the ticker has a principal to grow.
+            var yieldAccrued = r.agros_yield_accrued_usdc;
+            if (yieldAccrued == null && r.by_role && r.by_role.agros) yieldAccrued = r.by_role.agros.yield_usdc;
+            $("ap-yield-2").textContent = yieldAccrued != null ? fmtUSD(yieldAccrued) : "—";
+
+            // Yield ticker: principal = the operator's working USDC proxy
+            // (attributed volume bounded), growing at the global USYC APY.
+            var apy = (summary && summary.usyc_apy) || 0.043;
+            var principal = yieldAccrued != null && Number(yieldAccrued) > 0
+                ? Number(yieldAccrued)
+                : Math.max(Number(r.attributed_volume_usdc) || 0, 1000);
+            if (typeof window.startYieldTicker === "function") {
+                if (tickerCtl) tickerCtl.stop();
+                tickerCtl = window.startYieldTicker($("ap-yield"), principal, apy);
+            } else {
+                $("ap-yield").textContent = fmtUSD(principal);
+            }
+
+            renderTrace(r.latest_trace);
+        }
+
+        async function loadBuilderDetail(userId) {
+            // Best-effort enrichment from /api/builder/{user_id}.
+            try {
+                var res = await fetch(API + "/api/builder/" + encodeURIComponent(userId));
+                if (!res.ok) return null;
+                return await res.json();
+            } catch (e) { return null; }
+        }
+
+        async function load() {
+            var summary = null, row = null;
+            try {
+                var res = await fetch(API + "/api/leaderboard");
+                if (res.ok) {
+                    var data = await res.json();
+                    summary = data.summary || {};
+                    row = matchRow(data.leaderboard || []);
+                    if (data.ts_ms) $("ap-updated").textContent = "As of " + new Date(data.ts_ms).toLocaleTimeString();
+                }
+            } catch (e) { /* demo-safe */ }
+
+            // Enrich with the per-builder endpoint when we have a user id.
+            if (row && row.user_id != null) {
+                var detail = await loadBuilderDetail(row.user_id);
+                if (detail) {
+                    if (detail.latest_trace && !row.latest_trace) row.latest_trace = detail.latest_trace;
+                    ["attributed_volume_usdc", "builder_fees_usdc", "fills", "trace_count"].forEach(function (k) {
+                        if (detail[k] != null) row[k] = detail[k];
+                    });
+                }
+            }
+            applyRow(row, summary);
+        }
+
+        $("ap-copy").addEventListener("click", function () {
+            var url = window.location.href;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(function () {
+                    $("ap-copy").textContent = "Link Copied ✓";
+                    setTimeout(function () { $("ap-copy").textContent = "Copy Share Link"; }, 1800);
+                });
+            } else {
+                window.prompt("Copy this link:", url);
+            }
+        });
+
+        load();
+        setInterval(load, 15000);
+    })();
+    </script>
+</body>
+</html>

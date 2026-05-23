@@ -12,3 +12,6 @@ evm_version = "shanghai"
 [fmt]
 line_length = 100
 tab_width = 4
+
+[dependencies]
+forge-std = "1.16.1"

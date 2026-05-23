@@ -8,6 +8,27 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/static/styles.css" />
+    <style>
+        /* Yield ticker (treasury panel) — live-incrementing balance. */
+        .yield-ticker { position: relative; z-index: 2; margin: 4px 28px 14px; text-align: center;
+            font-family: var(--font-mono); font-size: 13px; color: var(--dash-muted, #684c26); }
+        .yield-ticker b { color: var(--dash-green, #275d3b); font-weight: 500; }
+        .yield-ticker .live-bal { display: block; font-family: var(--font-mono); font-size: 26px;
+            color: var(--dash-green, #275d3b); letter-spacing: 0.03em; margin-bottom: 2px; }
+
+        /* Kill-switch wax seal (risk panel). */
+        .killswitch-mount { position: relative; z-index: 2; margin: 14px 30px 18px; display: flex;
+            flex-direction: column; align-items: center; gap: 8px; }
+        .wax-seal { width: 84px; height: 84px; border-radius: 50%; border: 3px solid #5f1414;
+            background: radial-gradient(circle at 38% 32%, #b8412a, #7a1f1f 70%); color: #f5e6c8;
+            font-family: var(--font-display); font-size: 30px; line-height: 1; display: flex; align-items: center;
+            justify-content: center; cursor: pointer; box-shadow: 0 4px 14px rgba(90,20,20,0.4), inset 0 2px 6px rgba(255,255,255,0.18);
+            transition: transform 0.15s; }
+        .wax-seal:hover { transform: scale(1.05); }
+        .killswitch-mount .ks-caption { font-family: var(--font-display); font-size: 16px; letter-spacing: 0.06em;
+            text-transform: uppercase; color: var(--dash-red, #8a2f20); }
+        .killswitch-mount .ks-note { font-family: var(--font-body); font-style: italic; font-size: 12px; color: var(--dash-muted, #684c26); text-align: center; }
+    </style>
 </head>
 <body class="dashboard-page">
     <div class="parchment-overlay" aria-hidden="true"></div>
@@ -107,6 +128,11 @@
             </div>
 
             <p class="treasury-rate">+$0.0042 / sec · $1.37 today</p>
+
+            <div class="yield-ticker" aria-label="Live USYC yield ticker">
+                <b class="live-bal" id="yield-live">$0.00</b>
+                <span>USYC balance · farming while idle <b id="yield-apy">apy —</b></span>
+            </div>
         </section>
 
         <section class="dash-panel attribution-panel">
@@ -213,6 +239,12 @@
                 <span>♙</span><span>♙</span><span>♙</span><span>♙</span><span>♙</span>
                 <span>♙</span><span>♙</span><span>♙</span><span>♙</span><span>♙</span>
             </div>
+
+            <div class="killswitch-mount">
+                <button type="button" class="wax-seal" id="kill-switch" aria-label="Engage kill switch">✠</button>
+                <span class="ks-caption">Engage Kill Switch</span>
+                <span class="ks-note">Atomic shutdown · cancel quotes, close hedges, redeem treasury</span>
+            </div>
         </section>
     </main>
 
@@ -227,5 +259,59 @@
         </div>
         <p>© 2026 SibylFi · Built for the Agora hackathon</p>
     </footer>
+
+    <script src="/static/ticker.js"></script>
+    <script src="/static/killswitch.js"></script>
+    <script>
+    // Additive dashboard wiring: live USYC yield ticker + kill-switch seal.
+    // Self-contained; does not touch the existing static mockup content.
+    (function () {
+        var API = window.location.origin;
+        var $ = function (id) { return document.getElementById(id); };
+
+        function fmtPct(n) {
+            if (n == null) return "—";
+            return (Number(n) * 100).toFixed(2) + "%";
+        }
+
+        var tickerCtl = null;
+
+        async function hydrateTicker() {
+            var el = $("yield-live");
+            if (!el) return;
+            try {
+                var res = await fetch(API + "/state/balances");
+                if (!res.ok) return;
+                var bal = await res.json();
+                var agros = bal["agros-keeper"] || {};
+                var usycAmt = (agros.arc && agros.arc.USYC) || 0;
+                var nav = bal.usyc_nav || 1;
+                var balanceUsd = usycAmt * nav;
+                var apy = bal.usyc_apy || 0;
+                var apyEl = $("yield-apy");
+                if (apyEl) apyEl.textContent = "apy " + fmtPct(apy);
+                if (typeof window.startYieldTicker === "function") {
+                    if (tickerCtl) tickerCtl.update(balanceUsd, apy);
+                    else tickerCtl = window.startYieldTicker(el, balanceUsd, apy);
+                } else {
+                    el.textContent = "$" + balanceUsd.toFixed(2);
+                }
+            } catch (e) { /* demo-safe: leave the placeholder */ }
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            hydrateTicker();
+            // Refresh principal/APY periodically; the ticker keeps ticking between.
+            setInterval(hydrateTicker, 30000);
+
+            var seal = $("kill-switch");
+            if (seal && typeof window.wireKillSwitch === "function") {
+                var params = new URLSearchParams(window.location.search);
+                var userId = params.get("user") || (window.localStorage && localStorage.getItem("akrita.user")) || null;
+                window.wireKillSwitch(seal, userId);
+            }
+        });
+    })();
+    </script>
 </body>
 </html>

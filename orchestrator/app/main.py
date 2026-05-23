@@ -21,12 +21,17 @@ from orchestrator.app.redis_client import init_redis, shutdown_redis
 from orchestrator.app.routers import (
     builder,
     decisions,
+    health_instances,
+    instances,
+    kill_switch,
     leaderboard,
     live,
+    onboarding,
     state as state_router,
     traces,
     users,
 )
+from orchestrator.app.state import state
 
 logging.basicConfig(
     level=logging.INFO,
@@ -82,11 +87,23 @@ app.include_router(live.router, prefix="/live", tags=["live"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(builder.router, prefix="/api/builder", tags=["builder"])
 app.include_router(leaderboard.router, prefix="/api/leaderboard", tags=["leaderboard"])
+# Multi-tenant runtime: per-instance work-list, onboarding/consent/geo gates,
+# unified kill switch, and per-instance liveness.
+app.include_router(instances.router, prefix="/api/instances", tags=["instances"])
+app.include_router(onboarding.router, prefix="/api/onboarding", tags=["onboarding"])
+app.include_router(kill_switch.router, prefix="/api/kill-switch", tags=["kill-switch"])
+app.include_router(health_instances.router, prefix="/api/health", tags=["health"])
 
 
 @app.get("/health", tags=["meta"])
 async def health() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/api/templates", tags=["templates"])
+async def list_templates() -> dict:
+    """Onboarding templates: Conservative King / Balanced Counsel / Aggressive Sovereign."""
+    return {"templates": await state.list_templates()}
 
 
 # Serve the bundled demo dashboard at /  — only if frontend is built.
@@ -118,5 +135,13 @@ if (frontend_dir / "index.html").exists():
     @app.get("/trace/{trace_ref:path}", include_in_schema=False)
     async def trace_page(trace_ref: str = "") -> FileResponse:
         return _frontend_page("trace.html")
+
+    @app.get("/personalize", include_in_schema=False)
+    async def personalize_page() -> FileResponse:
+        return _frontend_page("personalize.html")
+
+    @app.get("/akritai/{erc8004_id}", include_in_schema=False)
+    async def akritai_page(erc8004_id: str = "") -> FileResponse:
+        return _frontend_page("akritai.html")
 
     app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")

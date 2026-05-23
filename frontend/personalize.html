@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AKRITA AKRITAI — Personalize the Keeper</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/styles.css" />
+    <style>
+        /* Personalize page — built on the shared parchment / gold / ink tokens. */
+        .pz-shell { max-width: 1180px; margin: 0 auto; padding: 1.4rem 1.4rem 4rem; }
+        .pz-intro { text-align: center; margin: 0.4rem 0 1.4rem; }
+        .pz-intro h1 {
+            font-family: var(--font-display); font-weight: 700;
+            font-size: clamp(2rem, 4vw, 3rem); color: var(--page-ink, #17120e);
+            letter-spacing: 0.04em; margin: 0 0 0.3rem;
+        }
+        .pz-intro p { font-family: var(--font-body); color: var(--ink-soft); margin: 0.2rem auto; max-width: 64ch; font-size: 0.96rem; }
+        .pz-operator { font-family: var(--font-mono); font-size: 0.78rem; color: var(--gold-deep); letter-spacing: 0.06em; }
+        .pz-demo { display: none; margin: 0 auto 1.2rem; max-width: 60ch; text-align: center; font-style: italic;
+            color: var(--crimson); border: 1px dashed var(--crimson); padding: 0.5rem 1rem; border-radius: var(--rad-md); }
+
+        /* Mode toggle */
+        .pz-mode { display: flex; align-items: center; justify-content: center; gap: 1rem; margin: 0 0 1.6rem; flex-wrap: wrap; }
+        .pz-mode .mode-end { font-family: var(--font-display); font-size: 1.25rem; color: var(--ink-soft); letter-spacing: 0.05em; }
+        .pz-mode .mode-end em { display: block; font-size: 0.66rem; font-family: var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faded); font-style: normal; }
+        .mode-switch { position: relative; width: 78px; height: 34px; border: 1px solid var(--gold); border-radius: 20px;
+            background: rgba(255,250,238,0.4); cursor: pointer; flex: 0 0 auto; transition: background 0.3s; }
+        .mode-switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%;
+            background: linear-gradient(180deg, #aa7926, #926418); box-shadow: inset 0 1px rgba(255,255,255,0.2); transition: left 0.3s; }
+        body[data-mode="strategos"] .mode-switch::after { left: 49px; }
+        body[data-mode="strategos"] .mode-switch { background: rgba(176,138,60,0.18); }
+        .mode-readout { text-align: center; font-style: italic; color: var(--gold-deep); margin: -0.8rem 0 1.6rem; font-size: 0.92rem; }
+        .pro-only { display: none; }
+        .pro-badge { font-family: var(--font-mono); font-size: 0.56rem; letter-spacing: 0.12em; text-transform: uppercase;
+            color: var(--gold-deep); border: 1px solid var(--gold); border-radius: 2px; padding: 0 0.3rem; margin-left: 0.5rem; vertical-align: middle; }
+
+        /* Template cards */
+        .tpl-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 0 0 1.8rem; }
+        @media (max-width: 760px) { .tpl-grid { grid-template-columns: 1fr; } }
+        .tpl-card { position: relative; text-align: left; background: var(--vellum); border: 1px solid var(--rule);
+            border-radius: var(--rad-md); padding: 1.1rem 1.1rem 1.2rem; cursor: pointer; font: inherit; color: inherit;
+            box-shadow: inset 0 0 0 1px rgba(176,138,60,0.12); transition: box-shadow 0.2s, transform 0.15s; }
+        .tpl-card:hover { transform: translateY(-2px); }
+        .tpl-card.selected { box-shadow: inset 0 0 0 2px var(--gold), 0 4px 18px rgba(26,34,56,0.1);
+            background: linear-gradient(180deg, var(--vellum) 0%, #f0e5c0 100%); }
+        .tpl-card .tpl-flower { position: absolute; top: -10px; right: 10px; color: var(--gold); font-family: var(--font-display); font-size: 1.1rem; }
+        .tpl-card h3 { font-family: var(--font-display); font-weight: 600; font-size: 1.4rem; margin: 0 0 0.2rem; }
+        .tpl-card .tpl-tier { font-family: var(--font-mono); font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--gold-deep); margin: 0 0 0.6rem; }
+        .tpl-card .tpl-desc { font-family: var(--font-body); font-size: 0.86rem; color: var(--ink-soft); margin: 0; line-height: 1.4; }
+
+        /* Control panels */
+        .pz-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-bottom: 1.4rem; }
+        @media (max-width: 900px) { .pz-panels { grid-template-columns: 1fr; } }
+        .pz-panel { position: relative; background: var(--parchment); border: 1px solid var(--parchment-edge);
+            border-radius: var(--rad-md); padding: 1.3rem 1.3rem 1.1rem; box-shadow: 0 2px 18px rgba(26,34,56,0.07); }
+        .pz-panel.full { grid-column: 1 / -1; }
+        .pz-panel > h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.45rem; letter-spacing: 0.05em;
+            margin: 0 0 0.2rem; color: var(--page-ink, #17120e); }
+        .pz-panel > .greek { font-family: var(--font-display); font-style: italic; color: var(--gold-deep); margin: 0 0 1rem; font-size: 0.95rem; }
+
+        .ctrl { margin: 0 0 1rem; }
+        .ctrl label { display: flex; justify-content: space-between; align-items: baseline; font-family: var(--font-mono);
+            font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); margin-bottom: 0.35rem; }
+        .ctrl label .val { color: var(--gold-deep); font-weight: 500; letter-spacing: 0; }
+        .ctrl input[type="range"] { width: 100%; accent-color: var(--gold); height: 4px; cursor: pointer; }
+        .ctrl .hint { display: block; font-family: var(--font-body); font-style: italic; font-size: 0.74rem; color: var(--ink-faded); margin-top: 0.2rem; }
+
+        .chk-group { display: flex; flex-wrap: wrap; gap: 0.4rem 0.9rem; }
+        .chk-group label { display: inline-flex; align-items: center; gap: 0.35rem; font-family: var(--font-body); font-size: 0.85rem;
+            text-transform: none; letter-spacing: 0; color: var(--ink); margin: 0; }
+        .chk-group input { accent-color: var(--gold); }
+
+        .preview-box { margin-top: 0.6rem; padding: 0.6rem; border: 1px solid var(--rule); border-radius: var(--rad-md);
+            background: rgba(255,250,238,0.35); }
+        .preview-box .cap { font-family: var(--font-mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-faded); margin: 0 0 0.3rem; }
+
+        /* AGROS */
+        .agros-tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; margin-bottom: 1rem; }
+        @media (max-width: 560px) { .agros-tiers { grid-template-columns: 1fr; } }
+        .agros-tier { display: block; border: 1px solid var(--rule); border-radius: var(--rad-md); padding: 0.7rem 0.8rem; cursor: pointer;
+            background: var(--vellum); transition: box-shadow 0.2s; }
+        .agros-tier input { margin-right: 0.4rem; accent-color: var(--gold); }
+        .agros-tier:has(input:checked) { box-shadow: inset 0 0 0 2px var(--gold); background: linear-gradient(180deg, var(--vellum), #f0e5c0); }
+        .agros-tier b { font-family: var(--font-display); font-size: 1.05rem; }
+        .agros-tier small { display: block; font-family: var(--font-body); font-size: 0.78rem; color: var(--ink-soft); margin-top: 0.25rem; line-height: 1.35; }
+        .fee-disclosure { font-family: var(--font-mono); font-size: 0.72rem; color: var(--gold-deep); border: 1px dotted var(--gold);
+            border-radius: var(--rad-md); padding: 0.5rem 0.8rem; margin: 0 0 1rem; }
+        #agros-consent { display: none; }
+        .consent-note { font-style: italic; color: var(--moss); font-size: 0.8rem; display: none; margin-top: 0.4rem; }
+
+        /* Tier D waitlist */
+        .tierd-card { grid-column: 1 / -1; opacity: 0.85; border: 1px dashed var(--ink-faded); border-radius: var(--rad-md);
+            padding: 1.1rem 1.3rem; background: rgba(236,227,207,0.4); }
+        .tierd-card h3 { font-family: var(--font-display); font-size: 1.3rem; margin: 0 0 0.2rem; color: var(--ink-soft); }
+        .tierd-card .soon { font-family: var(--font-mono); font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--crimson); margin: 0 0 0.7rem; }
+        .tierd-card p { font-family: var(--font-body); font-size: 0.86rem; color: var(--ink-soft); margin: 0 0 0.8rem; }
+        .waitlist-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+        .waitlist-row input { flex: 1 1 220px; padding: 0.5rem 0.7rem; border: 1px solid var(--rule); border-radius: var(--rad-md);
+            font-family: var(--font-mono); font-size: 0.85rem; background: var(--vellum); color: var(--ink); }
+        .pz-btn { min-height: 42px; padding: 0 1.4rem; border: 1px solid var(--gold); border-radius: var(--rad-md);
+            font-family: var(--font-display); font-size: 1.05rem; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+            background: linear-gradient(180deg, #aa7926, #926418); color: #fff7e7; }
+        .pz-btn.ghost { background: rgba(255,250,238,0.4); color: #342313; }
+        .status-line { display: none; margin-top: 0.6rem; font-family: var(--font-mono); font-size: 0.78rem; color: var(--moss); }
+
+        /* Save bar */
+        .pz-savebar { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 1.4rem; flex-wrap: wrap; }
+    </style>
+</head>
+<body class="builder-page" data-mode="stratiotis">
+    <div class="parchment-overlay" aria-hidden="true"></div>
+
+    <header class="home-header builder-site-header">
+        <a class="home-brand" href="/" aria-label="AKRITA home">
+            <span class="home-brand-name">AKRITA</span>
+            <span class="home-brand-sub">AKRITAI</span>
+        </a>
+        <nav class="home-nav" aria-label="Primary">
+            <a href="/dashboard.html">Dashboard</a>
+            <span aria-hidden="true">·</span>
+            <a href="/personalize">Personalize</a>
+            <span aria-hidden="true">·</span>
+            <a href="/leaderboard.html">Leaderboard</a>
+            <span aria-hidden="true">·</span>
+            <a href="/about.html">About</a>
+        </nav>
+        <a class="home-enter" href="/dashboard.html">Enter Keeper</a>
+    </header>
+
+    <main class="pz-shell">
+        <div class="pz-intro">
+            <h1>Personalize the Keeper</h1>
+            <p>Configure your NOMOS market-maker, SPATHA hedger, and AGROS treasury. Begin from a template, then temper each agent to your appetite.</p>
+            <p class="pz-operator" id="operator-id"></p>
+        </div>
+
+        <div class="pz-demo" id="demo-banner">
+            No operator in context — viewing in read-only demo mode. Append <strong>?user=&lt;id&gt;</strong> to save your configuration.
+        </div>
+
+        <!-- GLOBAL MODE TOGGLE: Stratiotis (foot-soldier) / Strategos (general) -->
+        <div class="pz-mode" role="group" aria-label="Configuration mode">
+            <span class="mode-end">Stratiotis<em>foot-soldier</em></span>
+            <button type="button" class="mode-switch" id="mode-toggle" role="switch" aria-checked="false" aria-label="Toggle Stratiotis or Strategos mode"></button>
+            <span class="mode-end">Strategos<em>general</em></span>
+        </div>
+        <p class="mode-readout" id="mode-readout">Stratiotis — the foot-soldier's essentials</p>
+
+        <!-- TEMPLATE SELECTOR -->
+        <section aria-label="Templates">
+            <div class="tpl-grid" id="template-cards">
+                <!-- cards injected by personalize.js -->
+            </div>
+        </section>
+
+        <!-- CONTROL PANELS -->
+        <div class="pz-panels">
+            <!-- NOMOS -->
+            <section class="pz-panel">
+                <h2>NOMOS</h2>
+                <p class="greek">ΝΟΜΟΣ · the law inscribed — the market maker</p>
+
+                <div class="ctrl">
+                    <label for="nomos-offset">Quote spread offset (to max spread) <span class="val" id="nomos-offset-val"></span></label>
+                    <input type="range" id="nomos-offset" min="0.10" max="0.90" step="0.01" />
+                    <span class="hint">Lower = tighter quotes, higher Polymarket score.</span>
+                    <div class="preview-box">
+                        <p class="cap">Polymarket scoring curve · S = ((v−s)/v)²</p>
+                        <div id="score-curve"></div>
+                    </div>
+                </div>
+
+                <div class="ctrl">
+                    <label for="nomos-inventory">Inventory target <span class="val" id="nomos-inventory-val"></span></label>
+                    <input type="range" id="nomos-inventory" min="0" max="1" step="0.01" />
+                </div>
+
+                <div class="ctrl">
+                    <label for="nomos-maxpos">Max position / market <span class="val" id="nomos-maxpos-val"></span></label>
+                    <input type="range" id="nomos-maxpos" min="5" max="1000" step="5" />
+                </div>
+
+                <div class="ctrl">
+                    <label for="nomos-dailyloss">Daily loss limit <span class="val" id="nomos-dailyloss-val"></span></label>
+                    <input type="range" id="nomos-dailyloss" min="5" max="10000" step="5" />
+                </div>
+
+                <div class="ctrl" id="nomos-tags">
+                    <label>Market whitelist tags</label>
+                    <div class="chk-group">
+                        <label><input type="checkbox" name="market_whitelist_tags" value="crypto" /> Crypto</label>
+                        <label><input type="checkbox" name="market_whitelist_tags" value="sports" /> Sports</label>
+                        <label><input type="checkbox" name="market_whitelist_tags" value="politics" /> Politics</label>
+                        <label><input type="checkbox" name="market_whitelist_tags" value="economics" /> Economics</label>
+                        <label><input type="checkbox" name="market_whitelist_tags" value="culture" /> Culture</label>
+                    </div>
+                </div>
+
+                <!-- Strategos-only Pro placeholders -->
+                <div class="ctrl pro-only">
+                    <label for="pro-order-levels">Order levels <span class="pro-badge">Pro</span> <span class="val" id="pro-order-levels-val"></span></label>
+                    <input type="range" id="pro-order-levels" min="1" max="10" step="1" />
+                    <span class="hint">Number of layered quote rungs per side.</span>
+                </div>
+                <div class="ctrl pro-only">
+                    <label for="pro-vol-window">Volatility window <span class="pro-badge">Pro</span> <span class="val" id="pro-vol-window-val"></span></label>
+                    <input type="range" id="pro-vol-window" min="10" max="600" step="10" />
+                </div>
+            </section>
+
+            <!-- SPATHA -->
+            <section class="pz-panel">
+                <h2>SPATHA</h2>
+                <p class="greek">ΣΠΑΘΑ · the cut at the boundary — the hedger</p>
+
+                <div class="ctrl">
+                    <label for="spatha-aversion">Hedge band risk aversion <span class="val" id="spatha-aversion-val"></span></label>
+                    <input type="range" id="spatha-aversion" min="0.1" max="10" step="0.1" />
+                    <span class="hint">Higher aversion = narrower no-transaction band; SPATHA cuts sooner.</span>
+                    <div class="preview-box">
+                        <p class="cap">No-transaction band · delta corridor</p>
+                        <div id="ww-band"></div>
+                    </div>
+                </div>
+
+                <div class="ctrl" id="spatha-underlying">
+                    <label>Hedge underlying whitelist</label>
+                    <div class="chk-group">
+                        <label><input type="checkbox" name="hedge_underlying_whitelist" value="BTC" /> BTC</label>
+                        <label><input type="checkbox" name="hedge_underlying_whitelist" value="ETH" /> ETH</label>
+                        <label><input type="checkbox" name="hedge_underlying_whitelist" value="SOL" /> SOL</label>
+                    </div>
+                </div>
+
+                <div class="ctrl">
+                    <label for="spatha-leverage">Leverage cap <span class="val" id="spatha-leverage-val"></span></label>
+                    <input type="range" id="spatha-leverage" min="1" max="10" step="1" />
+                </div>
+
+                <div class="ctrl">
+                    <label for="spatha-funding">Kill-switch funding APR threshold <span class="val" id="spatha-funding-val"></span></label>
+                    <input type="range" id="spatha-funding" min="50" max="500" step="10" />
+                    <span class="hint">If perp funding exceeds this APR, SPATHA disengages.</span>
+                </div>
+
+                <div class="ctrl pro-only">
+                    <label for="pro-hlp-passive"><input type="checkbox" id="pro-hlp-passive" /> HLP passive vault toggle <span class="pro-badge">Pro</span></label>
+                    <span class="hint">Route idle hedge collateral to the passive HLP vault.</span>
+                </div>
+            </section>
+
+            <!-- AGROS -->
+            <section class="pz-panel full">
+                <h2>AGROS</h2>
+                <p class="greek">ΑΓΡΟΣ · the field that yields — the treasury</p>
+
+                <div class="agros-tiers">
+                    <label class="agros-tier">
+                        <input type="radio" name="agros_tier" value="A" />
+                        <b>Tier A</b>
+                        <small>USYC only. Idle collateral earns treasury yield; no derivatives. The keep stays walled.</small>
+                    </label>
+                    <label class="agros-tier">
+                        <input type="radio" name="agros_tier" value="B" />
+                        <b>Tier B</b>
+                        <small>USYC + modest hedge collateral. The balanced field — yield plus measured cover.</small>
+                    </label>
+                    <label class="agros-tier">
+                        <input type="radio" name="agros_tier" value="C" />
+                        <b>Tier C</b>
+                        <small>USYC + sUSDe with cooldown. Higher carry, redemption delay. Requires EIP-712 acceptance.</small>
+                    </label>
+                </div>
+
+                <p class="fee-disclosure">AKRITA charges 1 bp on hedge volume.</p>
+
+                <div id="agros-consent">
+                    <button type="button" class="pz-btn ghost" id="agros-consent-btn">Sign sUSDe cooldown acceptance (EIP-712)</button>
+                    <p class="consent-note" id="agros-consent-status"></p>
+                </div>
+            </section>
+
+            <!-- TIER D WAITLIST STUB -->
+            <section class="tierd-card">
+                <h3>Tier D — Custom (looped USDC · LSTs · multi-protocol)</h3>
+                <p class="soon">Coming after the hackathon</p>
+                <p>Bespoke strategies: looped USDC, liquid staking tokens, and multi-protocol routing. Leave an email to be notified when the field expands.</p>
+                <div class="waitlist-row">
+                    <input type="email" id="waitlist-email" placeholder="you@example.com" aria-label="Email for Tier D waitlist" />
+                    <button type="button" class="pz-btn ghost" id="waitlist-btn">Join the Waitlist</button>
+                </div>
+                <p class="status-line" id="waitlist-status"></p>
+            </section>
+        </div>
+
+        <div class="pz-savebar">
+            <button type="button" class="pz-btn" id="save-btn">Save Configuration</button>
+        </div>
+        <p class="status-line" id="save-status" style="text-align:center;"></p>
+    </main>
+
+    <footer class="builder-footer">
+        <p>ARC TESTNET — <em>this is not financial advice</em></p>
+        <div class="footer-flourish" aria-hidden="true"><span></span><b>✾</b><b>✾</b><b>✾</b><span></span></div>
+        <nav aria-label="Footer links">
+            <a href="/dashboard.html">Dashboard</a>
+            <a href="/leaderboard.html">Leaderboard</a>
+            <a href="/about.html">About</a>
+        </nav>
+    </footer>
+
+    <script src="/static/scorecurve.js"></script>
+    <script src="/static/wwband.js"></script>
+    <script src="/static/personalize.js"></script>
+</body>
+</html>

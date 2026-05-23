@@ -55,6 +55,10 @@ class Settings(BaseSettings):
     # ---------- AKRITA contracts (filled by deploy) ------------------------
     trace_registry_addr: str = ""
     builder_registry_addr: str = ""
+    # BuilderRegistry owner EOA keyfile (deployer). registerAgent is onlyOwner
+    # and ownership is fixed at construction (no transferOwnership), so on-chain
+    # builder registration is signed with this raw key, not a Circle MPC wallet.
+    arc_owner_keyfile: str = "secrets/arc_deployer.json"
 
     # ---------- Polymarket V2 ---------------------------------------------
     poly_builder_code: str = ""
@@ -70,6 +74,14 @@ class Settings(BaseSettings):
     circle_env: Literal["sandbox", "production"] = "sandbox"
     circle_wallet_set_id: str = ""
     circle_entity_secret_file: str = "secrets/circle_entity_secret.txt"
+
+    # ---------- App security ----------------------------------------------
+    # Fernet master key (urlsafe-base64, 32 bytes) for encrypting per-user
+    # secrets (Polymarket creds, signer keys) at rest. Generate with:
+    #   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+    akrita_secret_key: str = ""
+    # Shared bearer token guarding internal agent<->orchestrator endpoints.
+    internal_api_token: str = ""
 
     # ---------- Keeper wallets (per chain, EOA address shared across) -----
     pricing_wallet_addr: str = ""
@@ -124,6 +136,12 @@ class Settings(BaseSettings):
     safety_multiplier: float = 1.5
     min_usdc_buffer: float = 200.0
     usyc_min_subscribe: float = 50.0
+    # Projected next-60min USDC outflow estimate (until derived from open
+    # orders/fills). Drives the operational-buffer target.
+    treasury_projected_outflow_usdc: float = 200.0
+    # Hard per-action cap on any single treasury subscribe/redeem/transfer
+    # (USDC). Enforced server-side in the orchestrator — the trust boundary.
+    treasury_max_action_usdc: float = 10.0
 
     # ---------- Safety controls -------------------------------------------
     kill_switch_global: bool = False

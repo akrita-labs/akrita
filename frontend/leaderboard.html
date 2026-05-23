@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AKRITA — Operator Leaderboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/styles.css" />
+    <style>
+        /* Leaderboard-specific layout, built on the shared parchment tokens. */
+        .lb-shell { max-width: 1180px; margin: 0 auto; padding: 1.5rem 1.5rem 4rem; }
+        .lb-intro { text-align: center; margin: 0.5rem 0 1.6rem; }
+        .lb-intro h1 {
+            font-family: var(--font-display); font-weight: 700;
+            font-size: clamp(2rem, 4vw, 3rem); color: var(--dash-ink, #16120e);
+            letter-spacing: 0.04em; margin: 0 0 0.3rem;
+        }
+        .lb-intro p { font-family: var(--font-body); color: var(--ink-soft); margin: 0.2rem auto; max-width: 60ch; font-size: 0.96rem; }
+        .lb-verify { font-size: 0.82rem; color: var(--gold-deep); font-style: italic; }
+
+        .lb-stats {
+            display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.75rem;
+            margin: 0 0 1.8rem;
+        }
+        @media (max-width: 880px) { .lb-stats { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 520px) { .lb-stats { grid-template-columns: repeat(2, 1fr); } }
+        .lb-stat {
+            background: var(--vellum); border: 1px solid var(--rule);
+            border-radius: var(--rad-md); padding: 0.85rem 0.6rem; text-align: center;
+            box-shadow: inset 0 0 0 1px rgba(176, 138, 60, 0.12);
+        }
+        .lb-stat b { display: block; font-family: var(--font-display); font-weight: 700;
+            font-size: 1.55rem; color: var(--dash-ink, #16120e); line-height: 1.1; }
+        .lb-stat span { display: block; font-family: var(--font-mono); font-size: 0.62rem;
+            text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-faded); margin-top: 0.35rem; }
+
+        .lb-panel { position: relative; background: var(--parchment); border: 1px solid var(--parchment-edge);
+            border-radius: var(--rad-md); padding: 1.4rem 1.2rem 1rem; box-shadow: 0 2px 18px rgba(26,34,56,0.08); }
+        .lb-panel h2 { font-family: var(--font-display); font-weight: 600; text-align: center;
+            color: var(--dash-ink, #16120e); letter-spacing: 0.05em; margin: 0 0 1rem; font-size: 1.5rem; }
+
+        table.lb-table { width: 100%; border-collapse: collapse; font-family: var(--font-body); }
+        .lb-table thead th {
+            font-family: var(--font-mono); font-size: 0.6rem; text-transform: uppercase;
+            letter-spacing: 0.12em; color: var(--gold-deep); text-align: left;
+            padding: 0.5rem 0.55rem; border-bottom: 1.5px solid var(--rule);
+        }
+        .lb-table tbody td { padding: 0.6rem 0.55rem; border-bottom: 1px solid var(--rule); font-size: 0.9rem; color: var(--ink); vertical-align: middle; }
+        .lb-table tbody tr:hover { background: rgba(176, 138, 60, 0.06); }
+        .lb-rank { font-family: var(--font-display); font-weight: 700; font-size: 1.2rem; color: var(--gold-deep); width: 2.2rem; }
+        .lb-rank.top { color: var(--crimson); }
+        .lb-op b { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; }
+        .lb-op small { display: block; color: var(--ink-faded); font-size: 0.74rem; }
+        .lb-sys { font-size: 0.6rem; color: var(--moss); border: 1px solid var(--moss); border-radius: 2px; padding: 0 0.25rem; margin-left: 0.3rem; vertical-align: middle; }
+        .mono { font-family: var(--font-mono); font-size: 0.78rem; }
+        .lb-num { font-family: var(--font-mono); text-align: right; font-variant-numeric: tabular-nums; }
+        a.lb-link { color: var(--gold-deep); text-decoration: none; border-bottom: 1px dotted var(--gold); }
+        a.lb-link:hover { color: var(--crimson); }
+        .pill { font-family: var(--font-mono); font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.1em;
+            padding: 0.12rem 0.4rem; border-radius: 2px; border: 1px solid; white-space: nowrap; }
+        .pill.ok { color: var(--moss); border-color: var(--moss); }
+        .pill.pending { color: var(--gold-deep); border-color: var(--gold); }
+        .pill.failed { color: var(--crimson); border-color: var(--crimson); }
+        .pill.none { color: var(--ink-faded); border-color: var(--ink-faded); }
+        .lb-empty { text-align: center; color: var(--ink-faded); font-style: italic; padding: 2rem; }
+        .lb-foot-note { text-align: center; font-size: 0.78rem; color: var(--ink-faded); margin-top: 0.9rem; font-family: var(--font-mono); }
+    </style>
+</head>
+<body class="dashboard-page">
+    <div class="parchment-overlay" aria-hidden="true"></div>
+
+    <header class="dashboard-header">
+        <a class="dashboard-brand" href="/" aria-label="AKRITA home">
+            <span class="dashboard-brand-name">AKRITA</span>
+            <span class="dashboard-brand-sub">AKRITAI</span>
+        </a>
+        <div class="dashboard-network">
+            <span class="network-cross" aria-hidden="true">✠</span>
+            <span>Arc testnet · BuilderRegistry <b id="lb-registry">…</b></span>
+        </div>
+        <div class="dashboard-live">
+            <span class="live-pill">LIVE <b aria-hidden="true">✠</b></span>
+        </div>
+    </header>
+
+    <main class="lb-shell">
+        <div class="lb-intro">
+            <h1>Operator Leaderboard</h1>
+            <p>Every operator runs their own NOMOS / SPATHA / AGROS agents under their own Polymarket builder code. This board is generated live from the orchestrator.</p>
+            <p class="lb-verify">Each builder code is registered on the Arc BuilderRegistry; each trace hash resolves on Arcscan + IPFS. Volume populates as Polymarket orders settle.</p>
+        </div>
+
+        <section class="lb-stats" id="lb-stats" aria-label="Network summary">
+            <div class="lb-stat"><b id="s-users">—</b><span>Operators</span></div>
+            <div class="lb-stat"><b id="s-builders">—</b><span>On-chain Builders</span></div>
+            <div class="lb-stat"><b id="s-traces">—</b><span>Trace Anchors</span></div>
+            <div class="lb-stat"><b id="s-decisions">—</b><span>Decisions</span></div>
+            <div class="lb-stat"><b id="s-apy">—</b><span>USYC APY</span></div>
+            <div class="lb-stat"><b id="s-nav">—</b><span>USYC NAV</span></div>
+        </section>
+
+        <section class="lb-panel">
+            <span class="panel-corner corner-tl" aria-hidden="true">✾</span>
+            <span class="panel-corner corner-tr" aria-hidden="true">✾</span>
+            <span class="panel-corner corner-bl" aria-hidden="true">✾</span>
+            <span class="panel-corner corner-br" aria-hidden="true">✾</span>
+            <h2>Χρυσοβουλλον · Operators by Attributed Volume</h2>
+            <table class="lb-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Operator</th>
+                        <th>Builder Code</th>
+                        <th>Agent</th>
+                        <th class="lb-num">Volume (USDC)</th>
+                        <th class="lb-num">Fills</th>
+                        <th class="lb-num">Traces</th>
+                        <th class="lb-num">Decisions</th>
+                        <th>Last Active</th>
+                        <th>Latest Trace</th>
+                    </tr>
+                </thead>
+                <tbody id="lb-body">
+                    <tr><td class="lb-empty" colspan="10">Loading the chronicle…</td></tr>
+                </tbody>
+            </table>
+            <p class="lb-foot-note" id="lb-updated"></p>
+        </section>
+    </main>
+
+    <footer class="dashboard-footer">
+        <p>ARC TESTNET — <em>this is not financial advice</em></p>
+        <div class="footer-flourish" aria-hidden="true"><span></span><b>✾</b><b>✾</b><b>✾</b><span></span></div>
+        <nav aria-label="Footer links">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/builder">Builder Profile</a>
+            <a href="/about">About</a>
+        </nav>
+    </footer>
+
+    <script>
+    (function () {
+        const $ = (id) => document.getElementById(id);
+        const short = (h) => (!h ? "—" : h.length > 14 ? h.slice(0, 8) + "…" + h.slice(-4) : h);
+        const fmtUSDC = (v) => "$" + (Number(v) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const fmtNum = (v) => (Number(v) || 0).toLocaleString();
+        const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+        function ago(ms) {
+            if (!ms) return "—";
+            const d = Date.now() - Number(ms);
+            if (d < 0) return "now";
+            const s = Math.floor(d / 1000);
+            if (s < 60) return s + "s ago";
+            const m = Math.floor(s / 60);
+            if (m < 60) return m + "m ago";
+            const h = Math.floor(m / 60);
+            if (h < 24) return h + "h ago";
+            return Math.floor(h / 24) + "d ago";
+        }
+
+        function regPill(p) {
+            const st = p.registration_status;
+            const matches = p.onchain_agent_id != null;
+            if (st === "registered") return '<span class="pill ok">✓ on-chain</span>';
+            if (st === "registering") return '<span class="pill pending">registering</span>';
+            if (st === "failed") return '<span class="pill failed">failed</span>';
+            if (p.builder_code) return '<span class="pill pending">pending</span>';
+            return '<span class="pill none">—</span>';
+        }
+
+        function traceCell(lt) {
+            if (!lt || !lt.trace_hash) return "—";
+            let html = '<span class="mono">' + short(lt.trace_hash) + "</span>";
+            const links = [];
+            if (lt.arc_tx_url) links.push('<a class="lb-link" href="' + esc(lt.arc_tx_url) + '" target="_blank" rel="noopener">arc ↗</a>');
+            if (lt.ipfs_url) links.push('<a class="lb-link" href="' + esc(lt.ipfs_url) + '" target="_blank" rel="noopener">ipfs ↗</a>');
+            if (links.length) html += '<br><small class="mono">' + links.join(" · ") + "</small>";
+            return html;
+        }
+
+        function row(r) {
+            const codeCell = r.builder_code
+                ? '<span class="mono">' + short(r.builder_code) + "</span><br>" + regPill(r)
+                : '<span class="pill none">no code</span>';
+            const agent = r.onchain_agent_id != null ? "#" + r.onchain_agent_id : "—";
+            const opName = esc(r.display_name || r.handle) + (r.is_system ? '<span class="lb-sys">SYSTEM</span>' : "");
+            return (
+                "<tr>" +
+                '<td class="lb-rank' + (r.rank === 1 ? " top" : "") + '">' + r.rank + "</td>" +
+                '<td class="lb-op"><b>' + opName + "</b><small>@" + esc(r.handle) + "</small></td>" +
+                "<td>" + codeCell + "</td>" +
+                '<td class="mono">' + agent + "</td>" +
+                '<td class="lb-num">' + fmtUSDC(r.attributed_volume_usdc) + "</td>" +
+                '<td class="lb-num">' + fmtNum(r.fills) + "</td>" +
+                '<td class="lb-num">' + fmtNum(r.trace_count) + "</td>" +
+                '<td class="lb-num">' + fmtNum(r.decisions) + "</td>" +
+                "<td>" + ago(r.last_active_ms) + "</td>" +
+                "<td>" + traceCell(r.latest_trace) + "</td>" +
+                "</tr>"
+            );
+        }
+
+        async function load() {
+            try {
+                const res = await fetch("/api/leaderboard");
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                const data = await res.json();
+                const s = data.summary || {};
+                $("s-users").textContent = fmtNum(s.total_users);
+                $("s-builders").textContent = fmtNum(s.registered_builders);
+                $("s-traces").textContent = fmtNum(s.total_traces);
+                $("s-decisions").textContent = fmtNum(s.total_decisions);
+                $("s-apy").textContent = s.usyc_apy != null ? (s.usyc_apy * 100).toFixed(2) + "%" : "—";
+                $("s-nav").textContent = s.usyc_nav != null ? Number(s.usyc_nav).toFixed(4) : "—";
+                if (s.builder_registry) $("lb-registry").textContent = short(s.builder_registry);
+
+                const body = $("lb-body");
+                const rows = data.leaderboard || [];
+                body.innerHTML = rows.length
+                    ? rows.map(row).join("")
+                    : '<tr><td class="lb-empty" colspan="10">No operators yet.</td></tr>';
+                $("lb-updated").textContent = "Updated " + new Date(data.ts_ms).toLocaleTimeString() + " · auto-refresh 12s";
+            } catch (e) {
+                $("lb-body").innerHTML = '<tr><td class="lb-empty" colspan="10">Could not reach the orchestrator (' + esc(e.message) + ").</td></tr>";
+            }
+        }
+
+        load();
+        setInterval(load, 12000);
+    })();
+    </script>
+</body>
+</html>

@@ -48,16 +48,18 @@
 
     async function hydrate() {
         try {
-            const [balR, fillsR, decisionsR, treasuryR] = await Promise.all([
+            const [balR, fillsR, decisionsR, treasuryR, tracesR] = await Promise.all([
                 fetch(API + "/state/balances").then(r => r.json()),
                 fetch(API + "/state/fills?limit=50").then(r => r.json()),
                 fetch(API + "/state/decisions?limit=50").then(r => r.json()),
                 fetch(API + "/state/treasury?limit=20").then(r => r.json()),
+                fetch(API + "/state/traces?limit=20").then(r => r.json()),
             ]);
 
             renderBalances(balR);
             renderFills(fillsR);
             renderDecisions(decisionsR.decisions || []);
+            renderTraces(tracesR);
         } catch (err) {
             console.error("hydrate failed", err);
         }
@@ -110,28 +112,26 @@
 
     function renderDecisions(decisions) {
         const byAgent = { nomos: [], spatha: [], agros: [] };
-        const traces = [];
-
         for (const d of decisions) {
             const role = d.agent_role;
             if (byAgent[role]) byAgent[role].push(d);
-
-            if (d.trace_hash) {
-                traces.push({
-                    decision_id: d.decision_id,
-                    agent_role: role,
-                    trace_hash: d.trace_hash,
-                    ipfs_cid: d.ipfs_cid,
-                    arc_tx_hash: d.arc_tx_hash,
-                });
-            }
         }
-
-        $("kpi-traces").textContent = traces.length;
-
         for (const agent of ["nomos", "spatha", "agros"]) {
             renderAgentFeed(agent, byAgent[agent]);
         }
+    }
+
+    // Trace KPI + list come straight from the traces table (on-chain anchor
+    // record), so they reflect committed traces regardless of execution status.
+    function renderTraces(tracesResponse) {
+        const count = tracesResponse.count || 0;
+        $("kpi-traces").textContent = count;
+        const traces = (tracesResponse.traces || []).map(t => ({
+            decision_id: t.decision_id,
+            agent_role: t.agent_role,
+            trace_hash: t.trace_hash,
+            ipfs_cid: t.cid,
+        }));
         renderTraceList(traces);
     }
 

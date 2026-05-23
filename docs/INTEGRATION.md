@@ -1,6 +1,6 @@
 # Live integration guide
 
-This document covers bringing each real-world adapter online, one primitive at a time. Every external surface sits behind a `Protocol` interface in `adapters/base.py`; the concrete live clients live in `adapters/real/` and are wired into `get_adapters()`. There is no mock path — the system runs against live integrations only (see `docs/LIVE_IMPLEMENTATION_PLAN.md`).
+This document covers wiring real-world adapters, one primitive at a time. Every external surface is defined behind a `Protocol` interface in `adapters/base.py`; adding an integration is a matter of writing a class that implements the protocol and wiring it into `get_adapters()` in `adapters/__init__.py`.
 
 The order below reflects critical-path lead times. Day 1 actions have multi-day external dependencies and must be filed before anything else.
 
@@ -28,7 +28,7 @@ Both actions are external and asynchronous. Fire them on Day 1 so the rest of th
 
 ## Polymarket V2 (Days 4–7)
 
-The `PolymarketReal` adapter wraps the V2 CLOB for orderbook, fills, and builder-fee accrual. Building it requires:
+The Polymarket V2 adapter must cover the CLOB feed, fills, and builder-fee accrual. Implementing it requires:
 
 1. `pip install py-clob-client-v2` (the legacy `py-clob-client` is V1 and will not work against the April 28 2026 CLOB).
 2. Import `ClobClient` from `polymarket_clob_client_v2`.
@@ -134,7 +134,7 @@ End-to-end test before mainnet: open a 1 USDC perp on BTC-PERP testnet, watch th
 
 ## Nanopayments + IPFS pinning (Day 6)
 
-The `NanopaymentReal` adapter posts to a pinning provider (Pinata, web3.storage, Lighthouse) that accepts Circle Nanopayments via the x402 protocol, and exposes `fetch_from_ipfs(cid)` for trace verification.
+The Nanopayment adapter posts to a pinning provider (Pinata, web3.storage, Lighthouse) that accepts Circle Nanopayments via the x402 protocol and returns a content-addressed CID.
 
 ```python
 from x402_client import Nanopay
@@ -173,9 +173,9 @@ The `Deploy.s.sol` script in this repo deploys both contracts and registers the 
 
 ---
 
-## Cut-over checklist
+## Integration checklist
 
-The orchestrator's `get_adapters()` factory (`adapters/__init__.py`) constructs the live adapter container. Before relying on any adapter, verify it individually with the corresponding smoke script under `scripts/live/` (one script per adapter — see `docs/LIVE_IMPLEMENTATION_PLAN.md` Phase 1 exit gates).
+The orchestrator's `get_adapters()` factory (`adapters/__init__.py`) is where each real adapter class is wired in. Before wiring an adapter into the factory, verify it individually with a corresponding script under `scripts/` (one script per adapter — write these as you go).
 
 Suggested order of cut-over, lowest blast radius first:
 
@@ -188,4 +188,4 @@ Suggested order of cut-over, lowest blast radius first:
 7. Hyperliquid testnet (open and close a 1 USDC perp position)
 8. Polymarket V2 mainnet (Day 8+, after testnet has been clean for 48 hours)
 
-If any step regresses, isolate the failing adapter and degrade that primitive (e.g. CCTP fallback for Gateway, testnet USYC if eligibility is blocked) rather than taking down the whole stack. The non-negotiable safety invariants in `docs/LIVE_IMPLEMENTATION_PLAN.md` still apply.
+Wire one adapter into `get_adapters()` at a time so a regression in one integration can be isolated rather than taking down the whole stack.

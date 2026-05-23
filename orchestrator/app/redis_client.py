@@ -53,42 +53,41 @@ def get_redis() -> Redis:
 # Monotonic decision counters
 # ---------------------------------------------------------------------------
 
-def _counter_key(agent_role: str) -> str:
-    return f"akrita:decision_counter:{agent_role}"
+def _counter_key(scope: str) -> str:
+    return f"akrita:decision_counter:{scope}"
 
 
-async def next_decision_id(agent_role: str) -> int:
-    """Atomic per-agent decision ID counter."""
+async def next_decision_id(scope: str) -> int:
+    """Atomic decision-ID counter, scoped per agent_instance (or agent_role)."""
     r = get_redis()
-    return int(await r.incr(_counter_key(agent_role)))
+    return int(await r.incr(_counter_key(scope)))
 
 
-async def reset_decision_counter(agent_role: str, to: int = 0) -> None:
+async def reset_decision_counter(scope: str, to: int = 0) -> None:
     """Test/admin helper — reset the counter."""
     r = get_redis()
-    await r.set(_counter_key(agent_role), to)
+    await r.set(_counter_key(scope), to)
 
 
 # ---------------------------------------------------------------------------
-# Nonce replay protection
+# Nonce replay protection (scoped per agent_instance)
 # ---------------------------------------------------------------------------
 
-def _nonce_key(agent_role: str) -> str:
-    return f"akrita:nonces:{agent_role}"
+def _nonce_key(scope: str) -> str:
+    return f"akrita:nonces:{scope}"
 
 
-async def claim_nonce(agent_role: str, nonce: int) -> bool:
-    """SADD returns 1 if the nonce was newly added, 0 if it was already
-    in the set. Returns True only when the nonce was unused.
-    """
+async def claim_nonce(scope: str, nonce: int) -> bool:
+    """SADD returns 1 if the nonce was newly added, 0 if already present.
+    `scope` is the agent_instance_id (falls back to agent_role)."""
     r = get_redis()
-    added = await r.sadd(_nonce_key(agent_role), int(nonce))
+    added = await r.sadd(_nonce_key(scope), int(nonce))
     return bool(added)
 
 
-async def has_nonce(agent_role: str, nonce: int) -> bool:
+async def has_nonce(scope: str, nonce: int) -> bool:
     r = get_redis()
-    return bool(await r.sismember(_nonce_key(agent_role), int(nonce)))
+    return bool(await r.sismember(_nonce_key(scope), int(nonce)))
 
 
 # ---------------------------------------------------------------------------

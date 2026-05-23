@@ -39,9 +39,13 @@ contract TraceRegistryTest is Test {
     }
 
     function test_commitTrace_unauthorizedReverts() public {
+        // The test contract deploys the registry, so it is auto-authorized as
+        // the deployer. Prank from a stranger to exercise the unauthorized path.
+        address stranger = address(0xDEAD);
         bytes32 hash = keccak256("trace");
+        vm.prank(stranger);
         vm.expectRevert(abi.encodeWithSelector(
-            TraceRegistry.NotAuthorized.selector, address(this)
+            TraceRegistry.NotAuthorized.selector, stranger
         ));
         registry.commitTrace(1, 42, hash, "bafy");
     }

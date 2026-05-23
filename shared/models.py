@@ -67,6 +67,10 @@ class Chain(str, Enum):
 # Base decision envelope
 # ---------------------------------------------------------------------------
 
+# Owner of pre-multitenant rows; default tenant when a decision omits user_id.
+SYSTEM_USER_ID = "00000000-0000-0000-0000-000000000001"
+
+
 class DecisionBase(BaseModel):
     """Common fields every agent decision carries."""
     model_config = ConfigDict(use_enum_values=True)
@@ -79,6 +83,12 @@ class DecisionBase(BaseModel):
     rationale_hash: str = Field(
         pattern=r"^0x[a-f0-9]{64}$",
         description="sha256 of the full reasoning trace body",
+    )
+    # Multi-tenant identity. Defaults to the system tenant for backward
+    # compatibility; user-owned agent instances set both explicitly.
+    user_id: str = Field(default=SYSTEM_USER_ID, description="Owning user UUID")
+    agent_instance_id: Optional[str] = Field(
+        default=None, description="Owning agent_instance UUID"
     )
 
 
@@ -104,6 +114,9 @@ class PricingDecision(DecisionBase):
     operator_fee_bps: int = Field(default=0, ge=0, le=1000)
     appetite_profile: AppetiteProfile = AppetiteProfile.BALANCED
 
+    # Optional one-line agent-authored narrative for the trace.
+    narrative: Optional[str] = None
+
 
 # ---------------------------------------------------------------------------
 # SPATHA — Hedge Agent
@@ -127,6 +140,9 @@ class HedgeDecision(DecisionBase):
     # If action == "close", reference the original open
     closes_position_id: Optional[int] = None
 
+    # Optional one-line agent-authored narrative for the trace.
+    narrative: Optional[str] = None
+
 
 # ---------------------------------------------------------------------------
 # AGROS — Treasury Agent
@@ -146,6 +162,9 @@ class TreasuryDecision(DecisionBase):
     # Forecasting context (helps trace reconstruction)
     projected_outflow_60min: float = Field(default=0.0)
     safety_multiplier: float = Field(default=1.5)
+
+    # Optional one-line agent-authored narrative for the trace.
+    narrative: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -174,11 +193,18 @@ class TraceBody(BaseModel):
     decision_id: int
     agent_role: AgentRole
     decision_type: str
+    user_id: str = SYSTEM_USER_ID
+    agent_instance_id: Optional[str] = None
 
     # Trading-R1 inspired structure
     fundamentals: dict
     technical: dict
     conclusion: dict
+
+    # Optional one-line human-readable narrative. Defaults None so trace
+    # canonicalization is unchanged when absent — agents may author it, and the
+    # decisions router also mirrors it into conclusion["narrative"].
+    narrative: Optional[str] = None
 
     # Risk-gate verdict
     risk_gate: RiskGateResult

@@ -40,8 +40,10 @@ async def verify_trace(decision_id: int) -> dict:
     if not trace:
         raise HTTPException(404, "trace not found")
 
+    cid = trace.get("cid") or trace.get("ipfs_cid")
+    arc_tx = trace.get("arc_tx") or trace.get("arc_tx_hash")
     adapters = get_adapters()
-    body_bytes = await adapters.nanopayment.fetch_from_ipfs(trace["ipfs_cid"])
+    body_bytes = await adapters.nanopayment.fetch_from_ipfs(cid)
     if body_bytes is None:
         raise HTTPException(502, "IPFS body unavailable")
 
@@ -54,9 +56,9 @@ async def verify_trace(decision_id: int) -> dict:
         "recomputed_hash": recomputed,
         "matches": matches,
         "body_size_bytes": len(body_bytes),
-        "ipfs_cid": trace["ipfs_cid"],
-        "arc_tx_hash": trace["arc_tx_hash"],
-        "arc_block": trace["arc_block"],
+        "ipfs_cid": cid,
+        "arc_tx_hash": arc_tx,
+        "arc_block": trace.get("arc_block"),
     }
 
 
@@ -68,8 +70,9 @@ async def get_trace_body(decision_id: int) -> dict:
     if not trace:
         raise HTTPException(404, "trace not found")
 
+    cid = trace.get("cid") or trace.get("ipfs_cid")
     adapters = get_adapters()
-    body_bytes = await adapters.nanopayment.fetch_from_ipfs(trace["ipfs_cid"])
+    body_bytes = await adapters.nanopayment.fetch_from_ipfs(cid)
     if body_bytes is None:
         raise HTTPException(502, "IPFS body unavailable")
 

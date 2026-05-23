@@ -90,6 +90,9 @@ async def _build_pricing_trace_sections(decision: PricingDecision) -> tuple[dict
         "confidence": decision.confidence,
         "appetite": decision.appetite_profile,
     }
+    conclusion["narrative"] = decision.narrative or (
+        f"Quoting {decision.market_id} bid {decision.bid} / ask {decision.ask}"
+    )
     return fundamentals, technical, conclusion
 
 
@@ -167,6 +170,9 @@ async def _build_hedge_trace_sections(decision: HedgeDecision) -> tuple[dict, di
         "stop_loss": decision.stop_loss,
         "closes_position_id": decision.closes_position_id,
     }
+    conclusion["narrative"] = decision.narrative or (
+        f"{decision.action} {decision.side} {decision.instrument} size {decision.size}"
+    )
     return fundamentals, technical, conclusion
 
 
@@ -186,8 +192,15 @@ async def _execute_treasury(decision: TreasuryDecision) -> dict:
     if action == TreasuryAction.NOOP.value:
         return {"action": "noop"}
 
+    # Server-side safety cap: bound any single treasury action regardless of
+    # what the agent requested. This is the trust boundary for fund movement.
+    if settings.kill_switch_treasury or settings.kill_switch_global:
+        raise HTTPException(423, "treasury kill switch engaged")
+    amount = min(decision.amount, settings.treasury_max_action_usdc)
+    treasury_wid = adapters.wallets.wallet_id("treasury", "ARC-TESTNET")
+
     if action == TreasuryAction.USYC_SUBSCRIBE.value:
-        receipt = await adapters.usyc.subscribe("agros-keeper", decision.amount)
+        receipt = await adapters.usyc.subscribe(treasury_wid, amount)
         await state.record_treasury({
             "action": action,
             "usdc_amount": receipt.usdc_in,
@@ -199,7 +212,7 @@ async def _execute_treasury(decision: TreasuryDecision) -> dict:
         return {"tx_hash": receipt.tx_hash, "usyc_out": receipt.usyc_out, "nav": receipt.nav}
 
     if action == TreasuryAction.USYC_REDEEM.value:
-        receipt = await adapters.usyc.redeem("agros-keeper", decision.amount)
+        receipt = await adapters.usyc.redeem(treasury_wid, amount)
         await state.record_treasury({
             "action": action,
             "usyc_amount": receipt.usyc_in,
@@ -212,8 +225,8 @@ async def _execute_treasury(decision: TreasuryDecision) -> dict:
 
     if action == TreasuryAction.GATEWAY_TRANSFER.value:
         receipt = await adapters.gateway.transfer(
-            wallet_id="agros-keeper",
-            amount_usdc=decision.amount,
+            wallet_id=treasury_wid,
+            amount_usdc=amount,
             src_chain=decision.src_chain,
             dst_chain=decision.dst_chain,
         )
@@ -236,7 +249,11 @@ async def _build_treasury_trace_sections(decision: TreasuryDecision) -> tuple[di
     adapters = get_adapters()
     nav = await adapters.usyc.get_nav_per_share()
     apy = await adapters.usyc.get_current_yield_apy()
-    bal = await adapters.wallets.get_balance("agros-keeper", "arc")
+    try:
+        treasury_wid = adapters.wallets.wallet_id("treasury", "ARC-TESTNET")
+        bal = await adapters.wallets.get_balance(treasury_wid, "ARC-TESTNET")
+    except Exception:
+        bal = {}
 
     fundamentals = {
         "usyc_nav_per_share": nav,
@@ -253,6 +270,9 @@ async def _build_treasury_trace_sections(decision: TreasuryDecision) -> tuple[di
         "action": decision.action,
         "amount": decision.amount,
     }
+    conclusion["narrative"] = decision.narrative or (
+        f"{decision.action} ${decision.amount:.2f}"
+    )
     return fundamentals, technical, conclusion
 
 
@@ -260,10 +280,27 @@ async def _build_treasury_trace_sections(decision: TreasuryDecision) -> tuple[di
 # Generic decision processing
 # ---------------------------------------------------------------------------
 
+def _scope_for(decision) -> str:
+    """Redis scope key for nonce/decision-id allocation.
+
+    User-owned agent instances are scoped per ``user_id:agent_instance_id`` so
+    two users running the same archetype never collide on either dimension.
+    System/legacy callers (no agent_instance_id) fall back to agent_role so
+    pre-multitenant uniqueness semantics are preserved.
+    """
+    if decision.agent_instance_id:
+        return f"{decision.user_id}:{decision.agent_instance_id}"
+    return decision.agent_role
+
+
 async def _process(decision, executor, trace_builder) -> dict:
     """Run the full lifecycle on any decision type."""
+    # Nonce/counter are scoped per agent_instance so two users' agents of the
+    # same archetype don't collide; fall back to agent_role for legacy callers.
+    scope = _scope_for(decision)
+
     # 1. Nonce replay check
-    if not await state.claim_nonce(decision.agent_role, decision.nonce):
+    if not await state.claim_nonce(scope, decision.nonce):
         raise HTTPException(409, "Nonce already used")
 
     # 2. Risk gate
@@ -295,6 +332,8 @@ async def _process(decision, executor, trace_builder) -> dict:
     await state.store_trace(decision.decision_id, {
         "decision_id": commit.decision_id,
         "agent_role": commit.agent_role,
+        "user_id": decision.user_id,
+        "agent_instance_id": decision.agent_instance_id,
         "trace_hash": commit.trace_hash,
         "ipfs_cid": commit.ipfs_cid,
         "arc_tx_hash": commit.arc_tx_hash,
@@ -303,12 +342,19 @@ async def _process(decision, executor, trace_builder) -> dict:
         "ts_ms": int(time.time() * 1000),
     })
 
-    # 5. Execute the actual on-chain action
+    # 5. Execute the actual on-chain action.
+    # The trace is already committed on-chain, so the decision is recorded
+    # regardless of whether execution succeeds — a committed trace must always
+    # have a corresponding decision record (and dashboard visibility). A blocked
+    # execution (e.g. pUSD collateral gate) is an expected operational state,
+    # not a server error.
+    exec_result: dict = {}
+    exec_error: str | None = None
     try:
         exec_result = await executor(decision)
     except Exception as e:
-        log.exception("Execution failed for decision %d", decision.decision_id)
-        raise HTTPException(500, f"execution failed: {e}")
+        exec_error = str(e)
+        log.warning("Execution blocked for decision %d: %s", decision.decision_id, exec_error)
 
     # 6. Persist decision + broadcast
     await state.store_decision({
@@ -318,11 +364,15 @@ async def _process(decision, executor, trace_builder) -> dict:
         "ipfs_cid": commit.ipfs_cid,
         "arc_tx_hash": commit.arc_tx_hash,
         "exec_result": exec_result,
+        "executed": exec_error is None,
+        "exec_error": exec_error,
     })
+    status = "submitted" if exec_error is None else "execution_blocked"
     await state.broadcast({
         "type": "decision",
         "decision_id": decision.decision_id,
         "agent": decision.agent_role,
+        "status": status,
         "trace_hash": commit.trace_hash,
         "arc_tx_hash": commit.arc_tx_hash,
         "exec_result": exec_result,
@@ -330,11 +380,12 @@ async def _process(decision, executor, trace_builder) -> dict:
     })
 
     return {
-        "status": "submitted",
+        "status": status,
         "decision_id": decision.decision_id,
         "trace_hash": commit.trace_hash,
         "ipfs_cid": commit.ipfs_cid,
         "arc_tx_hash": commit.arc_tx_hash,
         "arc_block": commit.arc_block,
         "exec_result": exec_result,
+        "exec_error": exec_error,
     }
