@@ -50,6 +50,15 @@
         </div>
     </header>
 
+    <nav class="dashboard-nav" aria-label="Primary">
+        <a href="/dashboard" class="is-active">Dashboard</a>
+        <a href="/leaderboard">Leaderboard</a>
+        <a href="/personalize">Personalize</a>
+        <a href="/builder">Builder</a>
+        <a href="/trace">Trace Viewer</a>
+        <a href="/about">About</a>
+    </nav>
+
     <main class="dashboard-shell">
         <section class="dash-panel inventory-panel">
             <span class="panel-corner corner-tl" aria-hidden="true">✾</span>
@@ -75,7 +84,7 @@
                         <th>7D Profile</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="inventory-rows">
                     <tr>
                         <td>1</td><td>0x4f2a...1bcd</td><td>2,134.21</td><td>1,261.55</td><td>+872.66</td><td><svg viewBox="0 0 120 24"><polyline points="0,18 12,17 22,14 32,16 42,12 54,11 64,8 74,4 86,10 96,13 108,18 120,16" /></svg></td>
                     </tr>
@@ -116,18 +125,18 @@
             </header>
 
             <div class="treasury-value">
-                <span id="kpi-usyc">4,827.41 USYC</span>
-                <small>$5,026.13 · NAV 1.0413</small>
+                <span id="kpi-usyc">—</span>
+                <small id="kpi-usyc-sub">—</small>
             </div>
 
             <div class="field-plate" aria-label="Treasury allocation: 12 percent USDC, 88 percent USYC">
                 <div class="field-furrows"></div>
                 <div class="field-worker" aria-hidden="true"></div>
-                <div class="field-label field-label-left">USDC<br />12%</div>
-                <div class="field-label field-label-right">USYC<br />88%</div>
+                <div class="field-label field-label-left" id="field-usdc-pct">USDC —</div>
+                <div class="field-label field-label-right" id="field-usyc-pct">USYC —</div>
             </div>
 
-            <p class="treasury-rate">+$0.0042 / sec · $1.37 today</p>
+            <p class="treasury-rate" id="treasury-rate">—</p>
 
             <div class="yield-ticker" aria-label="Live USYC yield ticker">
                 <b class="live-bal" id="yield-live">$0.00</b>
@@ -147,8 +156,8 @@
             </header>
 
             <div class="fees-total">
-                <span id="kpi-fees">$47.83</span>
-                <small>0xabab...cdcd <b aria-hidden="true">⧉</b></small>
+                <span id="kpi-fees">—</span>
+                <small id="kpi-builder">—</small>
             </div>
 
             <div class="mini-divider">
@@ -157,7 +166,7 @@
                 <span></span>
             </div>
 
-            <div class="coin-bars" aria-label="14-day daily fees in USDC">
+            <div class="coin-bars" id="fee-bars" aria-label="Daily attributed builder fees in USDC">
                 <div style="--h: 34px"><i></i><span>5/4</span><b>1.10</b></div>
                 <div style="--h: 42px"><i></i><span>5/5</span><b>1.62</b></div>
                 <div style="--h: 58px"><i></i><span>5/6</span><b>2.31</b></div>
@@ -186,7 +195,7 @@
                 <h2>Χρονικον · Decision Chronicle</h2>
             </header>
 
-            <div class="chronicle-list">
+            <div class="chronicle-list" id="chronicle-list">
                 <div><span>▥</span><time>14:32:18</time><p>NOMOS quoted 0x4f2a... at bid 0.612 / ask 0.628, size 100. Trace 0xa9ad...cb87 anchored.</p><b>STAGED</b></div>
                 <div><span>†</span><time>14:31:54</time><p>SPATHA crossed 0x1e3b... yes @ 0.621, size 75. Trace 0x61ac...e54d pinned.</p><b class="status-pin">PINNED</b></div>
                 <div><span>✤</span><time>14:30:37</time><p>AGROS rebalanced treasury: +412.22 USYC from yield. Trace 0xf14b...771a anchored.</p><b>ANCHORED</b></div>
@@ -221,11 +230,11 @@
                 <li><span></span>Exposure Concentration</li>
                 <li><span></span>Treasury Liquidity</li>
                 <li><span></span>Leverage Limit</li>
-                <li><span class="warn"></span>Volatility Regime</li>
+                <li><span></span>Volatility Regime</li>
                 <li><span></span>Correlation Break</li>
                 <li><span></span>Yield Accrual Health</li>
                 <li><span></span>Operational Heartbeat</li>
-                <li><span class="pause"></span>Governance Pause</li>
+                <li><span></span>Governance Pause</li>
             </ol>
 
             <div class="mini-divider risk-divider">
@@ -260,6 +269,7 @@
         <p>© 2026 SibylFi · Built for the Agora hackathon</p>
     </footer>
 
+    <script src="/static/dashboard.js"></script>
     <script src="/static/ticker.js"></script>
     <script src="/static/killswitch.js"></script>
     <script>

@@ -1190,6 +1190,37 @@ body.dashboard-page {
         radial-gradient(circle at 8% 86%, rgba(122, 80, 24, 0.06), transparent 26%);
 }
 
+.dashboard-nav {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    padding: 7px 46px 12px;
+    font-family: var(--font-display);
+    font-size: 16px;
+    letter-spacing: 0.02em;
+    border-bottom: 1px solid var(--dash-rule);
+    background: rgba(246, 239, 222, 0.72);
+}
+
+.dashboard-nav a {
+    color: var(--dash-ink);
+    text-decoration: none;
+    padding-bottom: 2px;
+    border-bottom: 1px solid transparent;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.dashboard-nav a:hover { color: var(--dash-gold); }
+
+.dashboard-nav a.is-active {
+    color: var(--dash-gold);
+    border-bottom-color: var(--dash-gold);
+}
+
 .dashboard-header {
     min-height: 82px;
     padding: 15px 46px 13px;
