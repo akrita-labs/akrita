@@ -45,6 +45,7 @@ async def lifespan(app: FastAPI):
     log.info("AKRITA orchestrator starting")
     log.info("  TraceRegistry: %s", settings.trace_registry_addr or "<unset>")
     log.info("  BuilderRegistry: %s", settings.builder_registry_addr or "<unset>")
+    log.info("  SusdeAcceptance: %s", settings.susde_acceptance_addr or "<unset>")
     log.info(
         "  BuilderCode: %s",
         (settings.poly_builder_code[:10] + "...") if settings.poly_builder_code else "<unset>",

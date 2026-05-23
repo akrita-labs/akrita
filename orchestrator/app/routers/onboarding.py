@@ -32,6 +32,8 @@ import re
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
+from shared.config import settings
+
 router = APIRouter()
 
 _ISO2_RE = re.compile(r"^[A-Za-z]{2}$")
@@ -40,6 +42,22 @@ JURISDICTION_CONSENT_TYPE = "jurisdiction"
 JURISDICTION_VERSION = "1"
 SUSDE_CONSENT_TYPE = "susde_cooldown"
 SUSDE_DEFAULT_VERSION = "1"
+# EIP-712 type string the SusdeAcceptance contract verifies against.
+SUSDE_CONSENT_TYPESTRING = "SusdeConsent(address user,uint64 version,bytes32 docHash,uint256 nonce)"
+
+
+def _susde_domain() -> dict:
+    """EIP-712 domain for the SusdeAcceptance registry.
+
+    `verifyingContract` is the deployed address from config (None until the
+    contract is broadcast and SUSDE_ACCEPTANCE_ADDR is set); `chainId` is
+    supplied client-side from the wallet/RPC.
+    """
+    return {
+        "name": "AKRITA SusdeAcceptance",
+        "version": "1",
+        "verifyingContract": settings.susde_acceptance_addr or None,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -232,7 +250,11 @@ async def record_susde_consent(body: SusdeConsentBody) -> dict:
     # NOTE: the on-chain SusdeAcceptance.accept(...) submission is a separate,
     # human-held step. Here we only persist the signed off-chain consent.
     has = await state.has_consent(body.user_id, SUSDE_CONSENT_TYPE, version)
-    return {"recorded": True, "has_consent": bool(has)}
+    return {
+        "recorded": True,
+        "has_consent": bool(has),
+        "verifying_contract": settings.susde_acceptance_addr or None,
+    }
 
 
 @router.get("/consent/susde/{user_id}")
@@ -240,7 +262,14 @@ async def get_susde_consent(user_id: str) -> dict:
     from orchestrator.app.state import state
 
     has = await state.has_consent(user_id, SUSDE_CONSENT_TYPE, SUSDE_DEFAULT_VERSION)
-    return {"has_consent": bool(has)}
+    return {
+        "has_consent": bool(has),
+        "consent_version": SUSDE_DEFAULT_VERSION,
+        "verifying_contract": settings.susde_acceptance_addr or None,
+        "domain": _susde_domain(),
+        "primary_type": "SusdeConsent",
+        "type": SUSDE_CONSENT_TYPESTRING,
+    }
 
 
 @router.post("/instance")

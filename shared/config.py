@@ -55,6 +55,8 @@ class Settings(BaseSettings):
     # ---------- AKRITA contracts (filled by deploy) ------------------------
     trace_registry_addr: str = ""
     builder_registry_addr: str = ""
+    # SusdeAcceptance EIP-712 consent registry (AGROS Tier C sUSDe cooldown).
+    susde_acceptance_addr: str = ""
     # BuilderRegistry owner EOA keyfile (deployer). registerAgent is onlyOwner
     # and ownership is fixed at construction (no transferOwnership), so on-chain
     # builder registration is signed with this raw key, not a Circle MPC wallet.
@@ -166,6 +168,7 @@ class Settings(BaseSettings):
     @field_validator(
         "trace_registry_addr",
         "builder_registry_addr",
+        "susde_acceptance_addr",
         "pricing_wallet_addr",
         "hedge_wallet_addr",
         "treasury_wallet_addr",
