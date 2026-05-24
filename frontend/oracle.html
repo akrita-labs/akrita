@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AKRITA — Rugpull Oracle</title>
+    <link rel="icon" type="image/png" href="/static/assets/akrita-emblem.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script defer src="/static/components.js"></script>
+    <script defer src="/static/oracle.js"></script>
+</head>
+<body class="dashboard-page" data-ak="nav,glossary,pills">
+    <div class="parchment-overlay" aria-hidden="true"></div>
+
+    <header class="dashboard-header">
+        <a class="dashboard-brand" href="/" aria-label="AKRITA home">
+            <img class="brand-emblem" src="/static/assets/akrita-emblem.png" alt="" aria-hidden="true" />
+            <span class="brand-wordmark">
+                <span class="dashboard-brand-name">AKRITA</span>
+                <span class="dashboard-brand-sub">AKRITAI</span>
+            </span>
+        </a>
+
+        <div class="dashboard-network">
+            <span class="network-cross" aria-hidden="true">✠</span>
+            <span>Arc testnet · rug-risk oracle</span>
+        </div>
+
+        <div class="dashboard-live">
+            <span class="live-pill">LIVE <b aria-hidden="true">✠</b></span>
+            <span class="live-flower" aria-hidden="true">✾</span>
+        </div>
+    </header>
+
+    <nav class="dashboard-nav" aria-label="Primary">
+        <a href="/app/oracle" class="is-active">Oracle</a>
+        <a href="/app/dashboard">Keeper Overview</a>
+        <a href="/app/trace">Traces</a>
+    </nav>
+
+    <main class="dashboard-shell" data-glossify>
+        <section class="dash-panel oracle-intro-panel">
+            <header class="panel-heading">
+                <h2>The Rugpull Oracle</h2>
+            </header>
+            <p class="oracle-lede">
+                When <abbr class="ak-gloss ak-tooltip" data-term="NOMOS" tabindex="0">NOMOS</abbr>
+                sees a token added to a NostalgiaForInfinity blacklist, it issues a
+                <strong>signed rug-risk claim</strong>: the reasoning is hashed, pinned to IPFS,
+                and anchored on Arc — provenance from the GitHub commit all the way to the
+                on-chain attestation. Bonds stake <em>for</em> or <em>against</em> the prediction;
+                the losing side is slashed on resolution.
+            </p>
+            <section class="home-proof oracle-pipeline" aria-label="Signal to on-chain attestation">
+                <ol class="proof-pipeline">
+                    <li><b>NFI Signal</b><span>A token is added to a blacklist-&lt;exchange&gt;.json commit.</span></li>
+                    <li><b>Claim + Hash</b><span>NOMOS builds the reasoning trace; sha256 of canonical JSON.</span></li>
+                    <li><b>IPFS</b><span>The full trace body is pinned and addressed by CID.</span></li>
+                    <li><b>Arc Anchor</b><span>traceHash + claim committed to TraceRegistry + ClaimRegistry.</span></li>
+                    <li><b>Resolve</b><span>Did it drop past the threshold in the window? Bonds settle.</span></li>
+                </ol>
+            </section>
+        </section>
+
+        <section class="dash-panel oracle-feed-panel">
+            <header class="panel-heading">
+                <h2>Issued claims</h2>
+                <span id="oracle-status" class="ak-pill ak-pill-gated">loading…</span>
+            </header>
+            <div id="oracle-feed" class="oracle-feed">
+                <p class="empty-state">Loading rug-risk claims…</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="dashboard-footer">
+        <p>ARC TESTNET — <em>this is not financial advice</em></p>
+        <div class="footer-flourish" aria-hidden="true">
+            <span></span><b>✾</b><b>✾</b><b>✾</b><span></span>
+        </div>
+        <p>© 2026 AKRITA · Built for the Agora hackathon</p>
+    </footer>
+</body>
+</html>
