@@ -73,6 +73,19 @@ async def issue_claim(req: IssueClaimReq) -> dict:
         raise HTTPException(503, f"oracle not ready: {e}")
 
 
+@router.post("/scan-freezes")
+async def scan_freezes(limit: int = 5) -> dict:
+    """Operator/demo: read recent on-chain USDT/USDC freezes and attest each on
+    Arc (idempotent). 503 until the oracle is wired (keepers + deployed registry)."""
+    from agents.nomos.claim_issuer import scan_freezes as _scan
+
+    try:
+        results = await _scan(get_adapters(), limit=max(1, limit))
+        return {"scanned": len(results), "results": results}
+    except Exception as e:
+        raise HTTPException(503, f"freeze scan failed: {e}")
+
+
 @router.post("/{claim_id}/resolve")
 async def resolve_claim(claim_id: int, req: ResolveReq) -> dict:
     """Resolver-gated: record whether the token rugged within the window."""

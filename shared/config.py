@@ -74,8 +74,14 @@ class Settings(BaseSettings):
     poly_collateral_ready: bool = False
 
     # ---------- Rugpull Oracle (Pivot 1) ----------------------------------
-    # ClaimRegistry on Arc (signed GoPlus rug-risk claims + bond market).
+    # ClaimRegistry on Arc (signed rug-risk / freeze claims + bond market).
     claim_registry_addr: str = ""
+    # On-chain stablecoin freeze signal (USDT/USDC blacklist events) — primary,
+    # zero-coverage-gap source, read via eth_rpc_url. Etherscan key optional
+    # (larger historical backfills + tx detail).
+    eth_rpc_url: str = "https://eth-pokt.nodies.app"
+    etherscan_api_key: str = ""
+    freeze_lookback_blocks: int = 90000  # ~2 weeks
     # GoPlus token-security signal: chain to screen + a comma-separated watchlist
     # of token addresses NOMOS screens for rug-risk flags.
     goplus_chain_id: int = 1  # Ethereum mainnet

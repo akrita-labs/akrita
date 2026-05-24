@@ -13,6 +13,12 @@ import time
 from typing import Iterable, Optional
 
 from agents.nomos.claim_trace import build_claim_trace, claim_trace_hash
+from agents.nomos.freeze_watcher import (
+    build_freeze_trace,
+    fetch_freezes,
+    freeze_decision_id,
+    freeze_trace_hash,
+)
 from agents.nomos.goplus_screen import build_claim_record, evaluate_risk, fetch_token_security
 from shared.canonical import canonical_json
 from shared.config import settings
@@ -100,4 +106,48 @@ async def screen_watchlist(
             out.append(await issue_for_token(adapters, addr, chain_id))
         except Exception as e:
             out.append({"address": str(addr).lower(), "error": str(e)})
+    return out
+
+
+# ----- on-chain stablecoin freeze attestations (primary signal) -------------
+
+
+async def issue_for_freeze(adapters, rec: dict, *, decision_id: Optional[int] = None) -> dict:
+    """Anchor one freeze event as a signed on-chain attestation: trace -> IPFS ->
+    TraceRegistry -> ClaimRegistry (window/threshold 0 — it's an attestation, no
+    drop-prediction bond). `decision_id` is deterministic from the freeze tx, so
+    re-issuing the same freeze is a no-op (the trace commit dedups)."""
+    decision_id = decision_id or freeze_decision_id(rec["freeze_tx"])
+    body = build_freeze_trace(rec, decision_id=decision_id)
+    hash_hex = freeze_trace_hash(body)
+
+    cid = await adapters.nanopayment.pin_to_ipfs(canonical_json(body))
+    anchor = await adapters.arc.commit_trace(_NOMOS_AGENT_ID, decision_id, hash_hex, cid)
+    issue = await adapters.claim_registry.issue_claim(
+        rec["token_id"], rec["freeze_tx"], hash_hex, cid, 0, 0
+    )
+    return {
+        "frozen_address": rec["frozen_address"],
+        "issuer": rec["issuer"],
+        "token_id": rec["token_id"],
+        "decision_id": decision_id,
+        "trace_hash": hash_hex,
+        "ipfs_cid": cid,
+        "arc_tx": getattr(anchor, "tx_hash", None),
+        "claim_tx": getattr(issue, "tx_hash", None),
+    }
+
+
+async def scan_freezes(adapters, *, limit: Optional[int] = None) -> list[dict]:
+    """Read recent USDT/USDC freezes and attest each on Arc. Idempotent per
+    freeze; one failure is captured, never raised."""
+    recs = await fetch_freezes(settings.eth_rpc_url, lookback_blocks=settings.freeze_lookback_blocks)
+    if limit:
+        recs = recs[:limit]
+    out: list[dict] = []
+    for r in recs:
+        try:
+            out.append(await issue_for_freeze(adapters, r))
+        except Exception as e:
+            out.append({"frozen_address": r.get("frozen_address"), "error": str(e)})
     return out
