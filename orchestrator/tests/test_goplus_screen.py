@@ -8,6 +8,9 @@ from agents.nomos.goplus_screen import (
 )
 
 CLEAN = {"token_symbol": "USDC", "token_name": "USD Coin", "is_honeypot": "0", "buy_tax": "0", "sell_tax": "0", "is_proxy": "1"}
+# A legit token with ordinary admin functions (like USDT/PEPE) — must NOT flag.
+LEGIT_ADMIN = {"token_symbol": "USDT", "is_honeypot": "0", "is_blacklisted": "1", "transfer_pausable": "1", "is_mintable": "1", "buy_tax": "0", "sell_tax": "0"}
+# A real scam: honeypot, plus an admin function as context, plus a small tax.
 HONEYPOT = {"token_symbol": "SCAM", "token_name": "Scam", "is_honeypot": "1", "is_mintable": "1", "buy_tax": "0", "sell_tax": "0.15", "owner_address": "0xabc"}
 
 
@@ -17,18 +20,28 @@ def test_evaluate_clean_not_flagged():
     assert r["reasons"] == []
 
 
-def test_evaluate_flags_honeypot_mint_and_tax():
+def test_legit_admin_functions_not_flagged():
+    """USDT-style: blacklist + pausable + mintable but no STRONG indicator -> not a rug."""
+    r = evaluate_risk(LEGIT_ADMIN)
+    assert r["flagged"] is False
+    assert r["reasons"] == []
+    assert "blacklist function" in r["context"]  # recorded, not a trigger
+    assert "owner can mint" in r["context"]
+
+
+def test_evaluate_flags_honeypot_only_on_strong():
     r = evaluate_risk(HONEYPOT)
     assert r["flagged"] is True
-    assert "honeypot" in r["reasons"]
-    assert "owner can mint" in r["reasons"]
-    assert any("sell tax" in x for x in r["reasons"])  # 15% >= 10% threshold
-    assert r["severity"] == len(r["reasons"])
+    assert "honeypot (cannot sell)" in r["reasons"]
+    assert "owner can mint" in r["context"]  # context, not a reason
+    assert all("sell tax" not in x for x in r["reasons"])  # 15% < 50% scam threshold
 
 
-def test_tax_below_threshold_not_flagged():
-    rec = {"buy_tax": "0.05", "sell_tax": "0.05", "is_honeypot": "0"}
-    assert evaluate_risk(rec)["flagged"] is False
+def test_scam_level_tax_flags():
+    rec = {"is_honeypot": "0", "buy_tax": "0.05", "sell_tax": "0.90"}
+    r = evaluate_risk(rec)
+    assert r["flagged"] is True
+    assert any("sell tax 90%" in x for x in r["reasons"])
 
 
 def test_token_id_case_insensitive_shape():
@@ -50,7 +63,8 @@ def test_claim_record_and_trace_hash_deterministic():
     assert rec["token"] == "SCAM"
     assert rec["chain_id"] == 1
     assert rec["provenance"].startswith("0x")
-    assert "honeypot" in rec["reasons"]
+    assert any("honeypot" in r for r in rec["reasons"])
+    assert "owner can mint" in rec["context"]
     h = claim_trace_hash(build_claim_trace(rec, decision_id=1))
     assert h == claim_trace_hash(build_claim_trace(rec, decision_id=1))
     assert h.startswith("0x") and len(h) == 66

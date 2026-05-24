@@ -22,19 +22,27 @@ DEFAULT_CHAIN_ID = 1  # Ethereum mainnet
 DEFAULT_WINDOW_S = 7 * 24 * 60 * 60
 DEFAULT_DROP_THRESHOLD_BPS = 5000
 
-# GoPlus boolean flags (string "1"/"0") that constitute rug risk -> human label.
-_BOOL_RISK = {
-    "is_honeypot": "honeypot",
-    "is_blacklisted": "blacklist function",
-    "can_take_back_ownership": "ownership re-takeable",
-    "transfer_pausable": "transfers pausable",
-    "hidden_owner": "hidden owner",
-    "selfdestruct": "self-destruct",
-    "is_mintable": "owner can mint",
+# STRONG rug/scam indicators — any one is sufficient to issue a claim. These are
+# the flags that actually mean "you will likely lose your money", not just "this
+# token has an admin function".
+_STRONG = {
+    "is_honeypot": "honeypot (cannot sell)",
     "cannot_sell_all": "cannot sell all",
+    "honeypot_with_same_creator": "creator linked to honeypots",
+    "selfdestruct": "self-destruct",
+    "hidden_owner": "hidden owner",
+}
+# COMMON admin capabilities — present in many LEGITIMATE tokens (USDT, USDC, PEPE
+# all have blacklist/mint/pause). Recorded as context, but NEVER a claim trigger
+# on their own — flagging USDT as a "rug" would be dishonest.
+_CONTEXT = {
+    "is_blacklisted": "blacklist function",
+    "transfer_pausable": "transfers pausable",
+    "is_mintable": "owner can mint",
+    "can_take_back_ownership": "ownership re-takeable",
     "trading_cooldown": "trading cooldown",
 }
-TAX_THRESHOLD = 0.10  # buy/sell tax at or above this (10%) is flagged
+SCAM_TAX = 0.50  # buy/sell tax at or above 50% is scam-level (legit tokens are < ~15%)
 
 
 def _truthy(v) -> bool:
@@ -48,18 +56,29 @@ def _tax(v) -> float:
         return 0.0
 
 
-def evaluate_risk(rec: dict, *, tax_threshold: float = TAX_THRESHOLD) -> dict:
-    """Pure: given a GoPlus per-token record, return flagged / reasons / severity."""
+def evaluate_risk(rec: dict, *, scam_tax: float = SCAM_TAX) -> dict:
+    """Pure: classify a GoPlus per-token record.
+
+    `flagged` is True only on STRONG indicators or scam-level tax — so legit
+    tokens with ordinary admin functions (USDT/PEPE) are NOT flagged. `context`
+    records the benign-but-notable capabilities for the trace.
+    """
     reasons: list[str] = []
-    for flag, label in _BOOL_RISK.items():
+    for flag, label in _STRONG.items():
         if _truthy(rec.get(flag)):
             reasons.append(label)
     bt, st = _tax(rec.get("buy_tax")), _tax(rec.get("sell_tax"))
-    if bt >= tax_threshold:
+    if bt >= scam_tax:
         reasons.append(f"buy tax {bt * 100:.0f}%")
-    if st >= tax_threshold:
+    if st >= scam_tax:
         reasons.append(f"sell tax {st * 100:.0f}%")
-    return {"flagged": bool(reasons), "reasons": reasons, "severity": len(reasons)}
+    context = [label for flag, label in _CONTEXT.items() if _truthy(rec.get(flag))]
+    return {
+        "flagged": bool(reasons),
+        "reasons": reasons,
+        "context": context,
+        "severity": len(reasons),
+    }
 
 
 def token_id(address: str, chain_id: int) -> str:
@@ -82,7 +101,7 @@ def build_claim_record(
     drop_threshold_bps: int = DEFAULT_DROP_THRESHOLD_BPS,
 ) -> dict:
     """Structured rug-risk claim derived from a flagged GoPlus record."""
-    keep = list(_BOOL_RISK) + ["buy_tax", "sell_tax", "owner_address"]
+    keep = list(_STRONG) + list(_CONTEXT) + ["buy_tax", "sell_tax", "owner_address"]
     return {
         "token": rec.get("token_symbol") or address[:10],
         "token_name": rec.get("token_name", ""),
@@ -92,6 +111,7 @@ def build_claim_record(
         "source_provider": "goplus",
         "provenance": provenance_hash(rec),
         "reasons": risk["reasons"],
+        "context": risk.get("context", []),
         "severity": risk["severity"],
         "flags": {k: rec[k] for k in keep if k in rec},
         "window_s": window_s,

@@ -39,6 +39,7 @@ def build_claim_trace(record: dict, *, decision_id: int) -> dict:
         "technical": {
             "signal": "goplus_token_security",
             "reasons": reasons,
+            "context": record.get("context", []),
             "severity": record.get("severity", len(reasons)),
             "flags": record.get("flags", {}),
             "window_s": record["window_s"],
