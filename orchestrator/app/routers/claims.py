@@ -9,10 +9,21 @@ returns `available: false` rather than erroring (honest "not live yet" state).
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 from adapters import get_adapters
 
 router = APIRouter()
+
+
+class IssueClaimReq(BaseModel):
+    pair: str  # e.g. "PEPE/USDC"
+    exchange: str | None = None
+    source_commit: str = ""
+
+
+class ResolveReq(BaseModel):
+    rugged: bool
 
 
 async def _with_bond(cr, claim: dict, claim_id: int) -> dict:
@@ -47,3 +58,27 @@ async def get_claim(claim_id: int) -> dict:
     if not c:
         raise HTTPException(404, "claim not found")
     return await _with_bond(cr, c, claim_id)
+
+
+@router.post("/issue")
+async def issue_claim(req: IssueClaimReq) -> dict:
+    """Operator/demo: issue a signed rug-risk claim end-to-end (trace -> anchor
+    -> register). 503 until the oracle is wired (keepers + deployed registry)."""
+    from agents.nomos.claim_issuer import issue_for_addition
+    from shared.config import settings
+
+    exchange = req.exchange or settings.nfi_blacklist_exchange
+    try:
+        return await issue_for_addition(get_adapters(), req.pair, exchange, req.source_commit)
+    except Exception as e:
+        raise HTTPException(503, f"oracle not ready: {e}")
+
+
+@router.post("/{claim_id}/resolve")
+async def resolve_claim(claim_id: int, req: ResolveReq) -> dict:
+    """Resolver-gated: record whether the token rugged within the window."""
+    try:
+        rcpt = await get_adapters().claim_registry.resolve(claim_id, req.rugged)
+    except Exception as e:
+        raise HTTPException(503, f"resolve failed: {e}")
+    return {"claim_id": claim_id, "rugged": req.rugged, "tx_hash": getattr(rcpt, "tx_hash", None)}
