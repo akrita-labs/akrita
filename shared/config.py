@@ -73,6 +73,17 @@ class Settings(BaseSettings):
     # Operator confirms the signer EOA holds pUSD collateral + allowances.
     poly_collateral_ready: bool = False
 
+    # ---------- Rugpull Oracle (Pivot 1) ----------------------------------
+    # ClaimRegistry on Arc (signed NFI blacklist rug-risk claims + bond market).
+    claim_registry_addr: str = ""
+    nfi_repo: str = "iterativv/NostalgiaForInfinity"
+    nfi_blacklist_exchange: str = "hyperliquid"
+    claim_window_s: int = 604800  # 7 days
+    claim_drop_threshold_bps: int = 5000  # 50%
+    # Gateway source chain that funds the Arc bond pool (set when funded).
+    bond_source_chain: str = ""
+    bond_source_domain: int = 0
+
     # ---------- Circle -----------------------------------------------------
     circle_api_key: str = ""
     circle_env: Literal["sandbox", "production"] = "sandbox"
@@ -171,6 +182,7 @@ class Settings(BaseSettings):
         "trace_registry_addr",
         "builder_registry_addr",
         "susde_acceptance_addr",
+        "claim_registry_addr",
         "pricing_wallet_addr",
         "hedge_wallet_addr",
         "treasury_wallet_addr",
