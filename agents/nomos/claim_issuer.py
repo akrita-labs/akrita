@@ -119,6 +119,18 @@ async def issue_for_freeze(adapters, rec: dict, *, decision_id: Optional[int] = 
     drop-prediction bond). `decision_id` is deterministic from the freeze tx, so
     re-issuing the same freeze is a no-op (the trace commit dedups)."""
     decision_id = decision_id or freeze_decision_id(rec["freeze_tx"])
+    # Skip if already attested — a cheap read avoids a guaranteed-revert on-chain
+    # write (the trace commit dedups on (agent, decisionId)). Keeps the loop idle-cheap.
+    try:
+        if await adapters.arc.get_trace_commit(_NOMOS_AGENT_ID, decision_id):
+            return {
+                "frozen_address": rec["frozen_address"],
+                "issuer": rec["issuer"],
+                "already_attested": True,
+            }
+    except Exception:
+        pass  # read failed -> fall through and let the write path decide
+
     body = build_freeze_trace(rec, decision_id=decision_id)
     hash_hex = freeze_trace_hash(body)
 
