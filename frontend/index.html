@@ -8,8 +8,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/static/styles.css" />
+    <script defer src="/static/components.js"></script>
 </head>
-<body class="home-page">
+<body class="home-page" data-ak="nav,glossary,pills">
     <div class="parchment-overlay" aria-hidden="true"></div>
 
     <header class="home-header">
@@ -39,7 +40,7 @@
         <a class="home-enter" href="/dashboard.html">Enter Keeper</a>
     </header>
 
-    <main class="home-shell">
+    <main class="home-shell" data-glossify>
         <section class="hero-copy" aria-labelledby="home-title">
             <p class="home-kicker">Agora Agents Hackathon · Canteen × Circle × Arc · 2026</p>
 
@@ -49,11 +50,17 @@
             </h1>
 
             <p class="hero-text">
-                Three autonomous agents — NOMOS, SPATHA, AGROS — keep the frontier.
-                Idle collateral sits in USYC earning treasury yield; pUSD margin moves
-                only when fills are imminent. Every decision hashed and anchored on Arc.
-                A keeper modeled on the Byzantine <em>stratiotika ktemata</em>: capital
-                that defends a frontier by remaining productive between engagements.
+                Three autonomous keepers —
+                <abbr class="ak-gloss ak-tooltip" data-term="NOMOS" data-tip="NOMOS / Market Maker - The pricing agent that posts and updates Polymarket quotes." title="NOMOS / Market Maker - The pricing agent that posts and updates Polymarket quotes." tabindex="0">NOMOS</abbr>
+                (Market Maker),
+                <abbr class="ak-gloss ak-tooltip" data-term="SPATHA" data-tip="SPATHA / Hedger - The risk agent that offsets inventory when exposure gets too large." title="SPATHA / Hedger - The risk agent that offsets inventory when exposure gets too large." tabindex="0">SPATHA</abbr>
+                (Hedger), and
+                <abbr class="ak-gloss ak-tooltip" data-term="AGROS" data-tip="AGROS / Treasury - The treasury agent that keeps idle collateral productive between trades." title="AGROS / Treasury - The treasury agent that keeps idle collateral productive between trades." tabindex="0">AGROS</abbr>
+                (Treasury) — keep capital productive between trades. Idle collateral
+                sits in USYC earning treasury yield; pUSD margin moves only when fills
+                are imminent. Every decision is hashed and anchored on Arc. A keeper
+                modeled on the Byzantine <em>stratiotika ktemata</em>: capital that
+                defends a frontier by remaining productive between engagements.
             </p>
 
             <div class="home-divider" aria-hidden="true">
@@ -94,6 +101,24 @@
             </div>
 
             <p class="plate-caption">Composite figure after Cappadocia, c. 950 CE</p>
+        </section>
+
+        <section class="home-triumvirate about-grid" aria-label="The three AKRITA agents">
+            <article>
+                <span>NOMOS / Market Maker</span>
+                <h2>Prices the market</h2>
+                <p>Maintains bid and ask quotes, then writes the reasoning trace before execution.</p>
+            </article>
+            <article>
+                <span>SPATHA / Hedger</span>
+                <h2>Contains exposure</h2>
+                <p>Reads inventory drift, opens hedges when gates allow it, and records blocked execution honestly.</p>
+            </article>
+            <article>
+                <span>AGROS / Treasury</span>
+                <h2>Keeps idle capital working</h2>
+                <p>Balances operating liquidity with yield-bearing treasury assets while preserving the audit trail.</p>
+            </article>
         </section>
     </main>
 

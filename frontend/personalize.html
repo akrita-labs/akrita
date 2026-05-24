@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/static/styles.css" />
+    <script defer src="/static/components.js"></script>
     <style>
         /* Personalize page — built on the shared parchment / gold / ink tokens. */
         .pz-shell { max-width: 1180px; margin: 0 auto; padding: 1.4rem 1.4rem 4rem; }
@@ -110,7 +111,7 @@
         .pz-savebar { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 1.4rem; flex-wrap: wrap; }
     </style>
 </head>
-<body class="builder-page" data-mode="stratiotis">
+<body class="builder-page" data-mode="stratiotis" data-ak="nav,glossary,pills">
     <div class="parchment-overlay" aria-hidden="true"></div>
 
     <header class="home-header builder-site-header">
@@ -130,7 +131,7 @@
         <a class="home-enter" href="/dashboard.html">Enter Keeper</a>
     </header>
 
-    <main class="pz-shell">
+    <main class="pz-shell" data-glossify>
         <div class="pz-intro">
             <h1>Personalize the Keeper</h1>
             <p>Configure your NOMOS market-maker, SPATHA hedger, and AGROS treasury. Begin from a template, then temper each agent to your appetite.</p>

@@ -23,6 +23,11 @@
     function shortHash(h) { return h ? h.slice(0, 8) + "…" + h.slice(-4) : "—"; }
     function setText(id, t) { var e = $(id); if (e) e.textContent = t; }
     function fmtTime(iso) { try { return new Date(iso).toLocaleTimeString(); } catch (e) { return ""; } }
+    function esc(s) {
+        return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+            return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+        });
+    }
 
     async function getJSON(path) {
         var r = await fetch(API + path);
@@ -111,8 +116,28 @@
         }).join("");
     }
 
+    function statusCell(decision) {
+        if (decision && (decision.exec_error || decision.executed === false || decision.status === "execution_blocked")) {
+            var detail = decision.exec_error
+                ? " Latest error: " + decision.exec_error
+                : "";
+            var tip = "Execution is gated by pUSD funding, margin, signer, or allowlist readiness." + detail;
+            return '<span class="ak-pill ak-pill-gated ak-tooltip" data-tip="' + esc(tip) +
+                '" title="' + esc(tip) + '" tabindex="0">GATED</span>';
+        }
+        return "<b>ANCHORED</b>";
+    }
+
     async function hydrateChronicle() {
         var tr = await getJSON("/state/traces?limit=14");
+        var decisionsByKey = {};
+        try {
+            var dr = await getJSON("/state/decisions?limit=40");
+            (dr.decisions || []).forEach(function (d) {
+                decisionsByKey[(d.agent_role || "") + ":" + d.decision_id] = d;
+                decisionsByKey[String(d.decision_id)] = d;
+            });
+        } catch (e) { /* traces still render without decision status */ }
         var traces = tr.traces || [];
         if (traces.length) {
             var maxBlock = traces.reduce(function (m, t) { return Math.max(m, t.arc_block || 0); }, 0);
@@ -129,13 +154,14 @@
         cl.innerHTML = traces.map(function (t) {
             var role = (t.agent_role || "").toUpperCase();
             var hashTxt = shortHash(t.trace_hash);
+            var decision = decisionsByKey[(t.agent_role || "") + ":" + t.decision_id] || decisionsByKey[String(t.decision_id)];
             var hashHtml = (exp && t.arc_tx)
                 ? '<a href="' + exp + "/tx/" + t.arc_tx + '" target="_blank" rel="noopener">' + hashTxt + "</a>"
                 : hashTxt;
             var block = t.arc_block ? t.arc_block.toLocaleString() : "—";
             return "<div><span>" + (glyph[t.agent_role] || "▥") + "</span><time>" + fmtTime(t.committed_at) +
                 "</time><p>" + role + " committed trace #" + t.decision_id + " — " + hashHtml +
-                " · block " + block + "</p><b>ANCHORED</b></div>";
+                " · block " + block + "</p>" + statusCell(decision) + "</div>";
         }).join("");
     }
 

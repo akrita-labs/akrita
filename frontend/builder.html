@@ -8,8 +8,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/static/styles.css" />
+    <script defer src="/static/components.js"></script>
+    <script defer src="/static/builder.js"></script>
 </head>
-<body class="builder-page">
+<body class="builder-page" data-ak="nav,glossary,pills">
     <div class="parchment-overlay" aria-hidden="true"></div>
 
     <header class="home-header builder-site-header">
@@ -37,7 +39,7 @@
         <a class="home-enter" href="/dashboard.html">Enter Keeper</a>
     </header>
 
-    <main class="builder-sheet">
+    <main class="builder-sheet" data-glossify>
         <span class="builder-corner corner-tl" aria-hidden="true">✾</span>
         <span class="builder-corner corner-tr" aria-hidden="true">✾</span>
         <span class="builder-corner corner-bl" aria-hidden="true">✾</span>
@@ -49,18 +51,18 @@
                 <span>✺</span>
             </div>
             <div>
-                <h1>Polymarket V2 · Builder Profile</h1>
-                <p><em>Builder code</em> 0xabababcdcdcdef... · registered 2026-05-12 · attribution <strong>VERIFIED</strong></p>
+                <h1 id="builder-title">Polymarket V2 · Builder Profile</h1>
+                <p id="builder-subtitle"><em>Builder code</em> loading... · attribution <strong>checking</strong></p>
             </div>
-            <a class="builder-cta" href="https://polymarket.com">View on Polymarket ↗</a>
+            <a class="builder-cta" id="builder-cta" href="/leaderboard">View Leaderboard</a>
         </section>
 
         <section class="builder-chart-panel">
             <header class="builder-section-heading">
                 <div class="builder-icon coins-icon" aria-hidden="true"></div>
-                <h2>Cumulative Attributed Volume · 14 Days</h2>
+                <h2>Live Attribution Snapshot</h2>
             </header>
-            <div class="volume-chart" aria-label="Cumulative attributed volume over 14 days">
+            <div class="volume-chart" id="builder-volume-chart" aria-label="Live attributed volume status">
                 <svg viewBox="0 0 760 250" role="img" aria-label="Rising cumulative volume chart">
                     <defs>
                         <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(22)">
@@ -88,10 +90,10 @@
                 </svg>
             </div>
             <div class="builder-metrics">
-                <article><span class="metric-coin" aria-hidden="true"></span><strong>$47,283.41</strong><small>Attributed Volume</small></article>
-                <article><span class="metric-quill" aria-hidden="true"></span><strong>$47.83 USDC</strong><small>Builder Fees</small></article>
-                <article><span class="metric-tablet" aria-hidden="true"></span><strong>1,247</strong><small>Orders Attributed</small></article>
-                <article><span class="metric-scroll" aria-hidden="true"></span><strong>93.2%</strong><small>Fill Rate</small></article>
+                <article><span class="metric-coin" aria-hidden="true"></span><strong id="builder-volume">$0.00</strong><small>Attributed Volume</small></article>
+                <article><span class="metric-quill" aria-hidden="true"></span><strong id="builder-fees">$0.00 USDC</strong><small>Builder Fees</small></article>
+                <article><span class="metric-tablet" aria-hidden="true"></span><strong id="builder-fills">0</strong><small>Orders Attributed</small></article>
+                <article><span class="metric-scroll" aria-hidden="true"></span><strong id="builder-traces">0</strong><small>Trace Anchors</small></article>
             </div>
         </section>
 
@@ -105,23 +107,12 @@
                 <thead>
                     <tr><th></th><th>Time</th><th>Market</th><th>Side</th><th>Details</th><th>Fee (USDC)</th><th>Tx Hash</th></tr>
                 </thead>
-                <tbody>
-                    <tr><td>¶</td><td>14:32</td><td>0x4f2a...1bcd</td><td class="buy">BUY</td><td>100 @ 0.612</td><td>$0.38</td><td><a href="#">0x4f2a...1bcd ↗</a></td></tr>
-                    <tr><td>¶</td><td>14:31</td><td>0x9d11...47ac</td><td class="sell">SELL</td><td>250 @ 0.628</td><td>$0.49</td><td><a href="#">0x9d11...47ac ↗</a></td></tr>
-                    <tr><td>¶</td><td>14:29</td><td>0x2e77...a91f</td><td class="buy">BUY</td><td>150 @ 0.611</td><td>$0.31</td><td><a href="#">0x2e77...a91f ↗</a></td></tr>
-                    <tr><td>¶</td><td>14:27</td><td>0x8c33...0de1</td><td class="sell">SELL</td><td>200 @ 0.627</td><td>$0.41</td><td><a href="#">0x8c33...0de1 ↗</a></td></tr>
-                    <tr><td>¶</td><td>14:25</td><td>0x7b55...e3aa</td><td class="buy">BUY</td><td>300 @ 0.610</td><td>$0.52</td><td><a href="#">0x7b55...e3aa ↗</a></td></tr>
-                    <tr><td>¶</td><td>14:23</td><td>0x1c90...6f21</td><td class="buy">BUY</td><td>120 @ 0.609</td><td>$0.25</td><td><a href="#">0x1c90...6f21 ↗</a></td></tr>
-                    <tr><td>¶</td><td>14:21</td><td>0x3d44...b7c9</td><td class="sell">SELL</td><td>180 @ 0.626</td><td>$0.37</td><td><a href="#">0x3d44...b7c9 ↗</a></td></tr>
-                    <tr><td>¶</td><td>14:19</td><td>0xa8dd...2f08</td><td class="buy">BUY</td><td>100 @ 0.608</td><td>$0.21</td><td><a href="#">0xa8dd...2f08 ↗</a></td></tr>
-                    <tr><td>¶</td><td>14:17</td><td>0x6e11...9bd2</td><td class="sell">SELL</td><td>220 @ 0.625</td><td>$0.46</td><td><a href="#">0x6e11...9bd2 ↗</a></td></tr>
-                    <tr><td>¶</td><td>14:15</td><td>0x5a22...c9d1</td><td class="buy">BUY</td><td>160 @ 0.607</td><td>$0.29</td><td><a href="#">0x5a22...c9d1 ↗</a></td></tr>
-                    <tr><td>¶</td><td>14:13</td><td>0x0f88...4acd</td><td class="buy">BUY</td><td>140 @ 0.606</td><td>$0.27</td><td><a href="#">0x0f88...4acd ↗</a></td></tr>
-                    <tr><td>¶</td><td>14:11</td><td>0x9a66...7be3</td><td class="sell">SELL</td><td>210 @ 0.624</td><td>$0.44</td><td><a href="#">0x9a66...7be3 ↗</a></td></tr>
+                <tbody id="builder-fills-body">
+                    <tr><td colspan="7" class="empty-state">Loading live fills...</td></tr>
                 </tbody>
             </table>
 
-            <a class="show-earlier" href="#">Show earlier</a>
+            <a class="show-earlier" href="/leaderboard">Open leaderboard</a>
         </section>
     </main>
 

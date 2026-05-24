@@ -8,8 +8,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/static/styles.css" />
+    <script defer src="/static/components.js"></script>
+    <script defer src="/static/trace.js"></script>
 </head>
-<body class="trace-page">
+<body class="trace-page" data-ak="nav,glossary,pills">
     <div class="parchment-overlay" aria-hidden="true"></div>
 
     <header class="dashboard-header">
@@ -38,7 +40,7 @@
         <a href="/about">About</a>
     </nav>
 
-    <main class="trace-sheet">
+    <main class="trace-sheet" data-glossify>
         <span class="trace-corner corner-tl" aria-hidden="true">✾</span>
         <span class="trace-corner corner-tr" aria-hidden="true">✾</span>
         <span class="trace-corner corner-bl" aria-hidden="true">✾</span>
@@ -51,17 +53,43 @@
         </aside>
 
         <aside class="trace-stamps" aria-label="Trace status">
-            <div><span>✓ COMMITTED</span><b>✠</b></div>
-            <div><span>✓ PINNED</span><b>⚓</b></div>
-            <div><span>✓ VERIFIED</span><b>◉</b></div>
+            <div id="stamp-committed"><span>COMMITTED</span><b>✠</b></div>
+            <div id="stamp-pinned"><span>PINNED</span><b>⚓</b></div>
+            <div id="stamp-verified"><span>VERIFYING</span><b>◉</b></div>
         </aside>
 
         <section class="trace-document">
+            <section class="trace-summary" aria-labelledby="trace-summary-title">
+                <div class="trace-summary-head">
+                    <h2 id="trace-summary-title">Loading trace...</h2>
+                    <span id="trace-live-pill" class="ak-pill ak-pill-live ak-tooltip" data-tip="Trace metadata, body and risk verdict are loaded from live orchestrator endpoints." title="Trace metadata, body and risk verdict are loaded from live orchestrator endpoints." tabindex="0">LIVE</span>
+                </div>
+                <p id="trace-summary-why">Fetching the latest committed trace.</p>
+                <dl aria-label="Trace provenance">
+                    <div><dt>Role</dt><dd id="sum-role">—</dd></div>
+                    <div><dt>Decision</dt><dd id="sum-decision">—</dd></div>
+                    <div><dt>Time</dt><dd id="sum-ts">—</dd></div>
+                    <div><dt>Model</dt><dd id="sum-model">—</dd></div>
+                    <div><dt>Compute</dt><dd id="sum-compute">—</dd></div>
+                </dl>
+            </section>
+
+            <section class="trace-verify-stepper" aria-labelledby="trace-verify-title">
+                <h2 id="trace-verify-title">Verification</h2>
+                <div class="trace-step-list" id="trace-stepper">
+                    <div class="trace-step is-active" data-step="body"><b>1. Fetch from IPFS</b><span>Waiting for /traces/{id}/body.</span></div>
+                    <div class="trace-step" data-step="hash"><b>2. Hash canonical body</b><span>Server /verify recomputes with the authoritative canonicalizer.</span></div>
+                    <div class="trace-step" data-step="arc"><b>3. Check Arc registry</b><span>Waiting for on-chain hash comparison.</span></div>
+                    <div class="trace-step" data-step="seal"><b>4. Seal</b><span>Pending verified seal.</span></div>
+                </div>
+                <p class="trace-caveat">Browser-side recompute is deferred because canonical JSON and float representation must match the server exactly; /traces/{id}/verify is authoritative.</p>
+            </section>
+
             <header class="trace-title-row">
                 <div class="trace-initial" aria-hidden="true">T</div>
                 <div>
-                    <h1>Trace · 0xa9adcb87b510...</h1>
-                    <p><em>agent:</em> NOMOS · <em>decision_id:</em> 12847 · <em>ts:</em> 2026-05-23 14:32:18.123 UTC</p>
+                    <h1 id="trace-title">Trace · loading...</h1>
+                    <p id="trace-provenance"><em>agent:</em> — · <em>decision_id:</em> — · <em>ts:</em> —</p>
                     <div class="trace-title-rule" aria-hidden="true">
                         <span></span><b>✠</b><span></span><b>✠</b><span></span><b>✠</b><span></span>
                     </div>
@@ -72,19 +100,8 @@
                 <div class="trace-medallion scale-medallion" aria-hidden="true"></div>
                 <div class="trace-block-body">
                     <h2>I. Fundamenta — The Weighing of Facts</h2>
-                    <table class="trace-facts">
-                        <tr><th>market.id</th><td>0xabc...123</td></tr>
-                        <tr><th>market.question</th><td>"Will Fed cut rates by 25bps in June 2026?"</td></tr>
-                        <tr><th>implied_prob</th><td>0.62</td></tr>
-                        <tr>
-                            <th>news_context</th>
-                            <td>
-                                <span class="tone tone-dovish">Dovish</span> Powell signals patience as inflation shows further signs of easing<br />
-                                <span class="tone tone-neutral">Neutral</span> Jobs growth moderates; labor market remains resilient<br />
-                                <span class="tone tone-hawkish">Hawkish</span> FOMC officials caution against premature rate cuts
-                            </td>
-                        </tr>
-                        <tr><th>macro</th><td>CPI YoY 3.4 · FFR 5.25 · FOMC 2026-06-12</td></tr>
+                    <table class="trace-facts" id="trace-fundamentals">
+                        <tr><th>status</th><td>Loading live trace body...</td></tr>
                     </table>
                 </div>
             </section>
@@ -94,20 +111,17 @@
                 <div class="trace-block-body technical-grid">
                     <h2>II. Technica — The Measurement of Market</h2>
                     <div class="market-gauge">
-                        <div class="ask-label">ASK</div>
-                        <div class="bid-label">BID</div>
-                        <div class="mid-label">mid 0.625</div>
+                        <div class="ask-label" id="trace-ask-label">ASK</div>
+                        <div class="bid-label" id="trace-bid-label">BID</div>
+                        <div class="mid-label" id="trace-mid-label">mid —</div>
                         <div class="gauge-axis" aria-hidden="true"><b>✠</b></div>
-                        <ol>
+                        <ol id="trace-gauge-scale">
                             <li>0.665</li><li>0.650</li><li>0.640</li><li>0.630</li>
                             <li>0.620</li><li>0.610</li><li>0.600</li><li>0.590</li>
                         </ol>
                     </div>
-                    <dl class="technical-readout">
-                        <dt>deterministic_mid:</dt><dd>0.625</dd>
-                        <dt>llm_bid_delta_bps:</dt><dd>-15</dd>
-                        <dt>llm_ask_delta_bps:</dt><dd>+20</dd>
-                        <dt>rationale:</dt><dd>Dovish Reuters headline tilts probability higher. Headline parsed at 14:32:14, weighted 0.7 of total context vector...</dd>
+                    <dl class="technical-readout" id="trace-technical-readout">
+                        <dt>status:</dt><dd>Loading technical section...</dd>
                     </dl>
                 </div>
             </section>
@@ -116,15 +130,8 @@
                 <div class="trace-medallion ring-medallion" aria-hidden="true"></div>
                 <div class="trace-block-body">
                     <h2>III. Conclusio — The Decree Enacted</h2>
-                    <pre>{
-  "trace_id": "0xa9adcb87b510cde9f4a7b1f2d3c4e5f67890123456789abcdef0123456789abcd",
-  "decision_id": 12847,
-  "agent": "NOMOS",
-  "bid": 0.612,
-  "ask": 0.628,
-  "size": 100,
-  "risk_gate": "approved"
-}</pre>
+                    <span id="trace-conclusion-pill" class="ak-pill ak-pill-live ak-tooltip" data-tip="Conclusion is loaded from the live IPFS trace body and paired with the live risk gate verdict." title="Conclusion is loaded from the live IPFS trace body and paired with the live risk gate verdict." tabindex="0">LIVE</span>
+                    <pre id="trace-conclusion-json">Loading conclusion...</pre>
                 </div>
             </section>
         </section>

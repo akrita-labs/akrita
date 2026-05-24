@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/static/styles.css" />
+    <script defer src="/static/components.js"></script>
     <style>
         /* Leaderboard-specific layout, built on the shared parchment tokens. */
         .lb-shell { max-width: 1180px; margin: 0 auto; padding: 1.5rem 1.5rem 4rem; }
@@ -68,7 +69,7 @@
         .lb-foot-note { text-align: center; font-size: 0.78rem; color: var(--ink-faded); margin-top: 0.9rem; font-family: var(--font-mono); }
     </style>
 </head>
-<body class="dashboard-page">
+<body class="dashboard-page" data-ak="nav,glossary,pills">
     <div class="parchment-overlay" aria-hidden="true"></div>
 
     <header class="dashboard-header">
@@ -94,7 +95,7 @@
         <a href="/about">About</a>
     </nav>
 
-    <main class="lb-shell">
+    <main class="lb-shell" data-glossify>
         <div class="lb-intro">
             <h1>Operator Leaderboard</h1>
             <p>Every operator runs their own NOMOS / SPATHA / AGROS agents under their own Polymarket builder code. This board is generated live from the orchestrator.</p>
@@ -180,6 +181,14 @@
             return '<span class="pill none">—</span>';
         }
 
+        function dataStatusPill(r) {
+            if (r.is_system) return "";
+            if (r.handle === "operator" || r.display_name === "AKRITA House") {
+                return '<span class="ak-pill ak-pill-live ak-tooltip" data-tip="AKRITA House uses the real Polymarket builder code; volume and trace anchors are live." title="AKRITA House uses the real Polymarket builder code; volume and trace anchors are live." tabindex="0">LIVE</span>';
+            }
+            return '<span class="ak-pill ak-pill-demo ak-tooltip" data-tip="Demo operator account; builder code is a deterministic keccak demo code." title="Demo operator account; builder code is a deterministic keccak demo code." tabindex="0">DEMO</span>';
+        }
+
         function traceCell(lt) {
             if (!lt || !lt.trace_hash) return "—";
             let html = '<span class="mono">' + short(lt.trace_hash) + "</span>";
@@ -192,7 +201,7 @@
 
         function row(r) {
             const codeCell = r.builder_code
-                ? '<span class="mono">' + short(r.builder_code) + "</span><br>" + regPill(r)
+                ? '<span class="mono">' + short(r.builder_code) + "</span><br>" + regPill(r) + " " + dataStatusPill(r)
                 : '<span class="pill none">no code</span>';
             const agent = r.onchain_agent_id != null ? "#" + r.onchain_agent_id : "—";
             const opName = esc(r.display_name || r.handle) + (r.is_system ? '<span class="lb-sys">SYSTEM</span>' : "");

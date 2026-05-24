@@ -13,6 +13,7 @@
     var $ = function (id) { return document.getElementById(id); };
     var MODE_KEY = "akrita.mode";          // "stratiotis" | "strategos"
     var DEFAULT_MODE = "stratiotis";
+    var SANDBOX_USER = "sandbox-operator";
 
     // Resolve a user id: ?user= overrides localStorage; absence => demo mode.
     var params = new URLSearchParams(window.location.search);
@@ -387,6 +388,69 @@
         if (e) { e.textContent = msg; e.style.display = "block"; }
     }
 
+    function isSandboxUser() {
+        return String(userId || "").indexOf("sandbox-") === 0 || userId === SANDBOX_USER;
+    }
+
+    function ensureDeployModal() {
+        var existing = $("pz-deploy-modal");
+        if (existing) return existing;
+
+        var host = document.createElement("div");
+        host.id = "pz-deploy-modal";
+        host.className = "ak-modal-backdrop";
+        host.hidden = true;
+        host.innerHTML =
+            '<section class="ak-modal" role="dialog" aria-modal="true" aria-labelledby="pz-deploy-title">' +
+            '<span class="ak-pill ak-pill-gated">Sandbox</span>' +
+            '<h2 id="pz-deploy-title">Sign to Deploy</h2>' +
+            '<p>This is a sandbox confirmation over localStorage identity. Circle Modular Wallet signing and on-chain session keys are deferred.</p>' +
+            '<dl>' +
+            '<dt>Identity</dt><dd id="pz-deploy-user">—</dd>' +
+            '<dt>NOMOS</dt><dd id="pz-deploy-nomos">—</dd>' +
+            '<dt>SPATHA</dt><dd id="pz-deploy-spatha">—</dd>' +
+            '<dt>AGROS</dt><dd id="pz-deploy-agros">—</dd>' +
+            '</dl>' +
+            '<div class="ak-modal-actions">' +
+            '<button type="button" class="ak-modal-action" id="pz-deploy-cancel">Cancel</button>' +
+            '<button type="button" class="ak-modal-action primary" id="pz-deploy-confirm">Sign Sandbox Confirmation</button>' +
+            '</div>' +
+            '</section>';
+        document.body.appendChild(host);
+        return host;
+    }
+
+    function confirmDeploy() {
+        return new Promise(function (resolve) {
+            var modal = ensureDeployModal();
+            var cancel = $("pz-deploy-cancel");
+            var confirm = $("pz-deploy-confirm");
+            setText("pz-deploy-user", userId || "—");
+            setText("pz-deploy-nomos", "spread " + config.nomos.quote_spread_bps_offset_to_max_spread.toFixed(2) +
+                " · max $" + Number(config.nomos.max_position_per_market_usd).toFixed(0));
+            setText("pz-deploy-spatha", "risk aversion " + config.spatha.hedge_band_risk_aversion.toFixed(1) +
+                " · leverage " + Number(config.spatha.leverage_cap).toFixed(0) + "x");
+            setText("pz-deploy-agros", "tier " + config.agros.tier);
+            modal.hidden = false;
+            confirm.focus();
+
+            function done(value) {
+                modal.hidden = true;
+                cancel.removeEventListener("click", onCancel);
+                confirm.removeEventListener("click", onConfirm);
+                document.removeEventListener("keydown", onKey);
+                resolve(value);
+            }
+            function onCancel() { done(false); }
+            function onConfirm() { done(true); }
+            function onKey(ev) { if (ev.key === "Escape") done(false); }
+
+            cancel.addEventListener("click", onCancel);
+            confirm.addEventListener("click", onConfirm);
+            document.addEventListener("keydown", onKey);
+        });
+    }
+
     // ----- waitlist (Tier D stub) -----------------------------------------
 
     function wireWaitlist() {
@@ -427,7 +491,26 @@
     async function save() {
         var status = $("save-status");
         if (readOnly) {
-            if (status) { status.textContent = "Read-only demo — append ?user=<id> to save."; status.style.display = "block"; }
+            if (status) { status.textContent = "Read-only demo — connect the sandbox wallet to stage a sign-to-deploy confirmation."; status.style.display = "block"; }
+            return;
+        }
+        var confirmed = await confirmDeploy();
+        if (!confirmed) {
+            if (status) { status.textContent = "Deploy confirmation cancelled."; status.style.display = "block"; }
+            return;
+        }
+        if (isSandboxUser()) {
+            try {
+                localStorage.setItem("akrita.sandbox.config", JSON.stringify({
+                    user_id: userId,
+                    config: config,
+                    signed_at: new Date().toISOString(),
+                }));
+            } catch (e) {}
+            if (status) {
+                status.textContent = "Sandbox confirmation signed — configuration staged locally; no wallet transaction was sent.";
+                status.style.display = "block";
+            }
             return;
         }
         if (status) { status.textContent = "Saving…"; status.style.display = "block"; }

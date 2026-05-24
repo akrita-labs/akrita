@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/static/styles.css" />
+    <script defer src="/static/components.js"></script>
     <style>
         /* Yield ticker (treasury panel) — live-incrementing balance. */
         .yield-ticker { position: relative; z-index: 2; margin: 4px 28px 14px; text-align: center;
@@ -30,7 +31,7 @@
         .killswitch-mount .ks-note { font-family: var(--font-body); font-style: italic; font-size: 12px; color: var(--dash-muted, #684c26); text-align: center; }
     </style>
 </head>
-<body class="dashboard-page">
+<body class="dashboard-page" data-ak="nav,glossary,pills">
     <div class="parchment-overlay" aria-hidden="true"></div>
 
     <header class="dashboard-header">
@@ -59,7 +60,7 @@
         <a href="/about">About</a>
     </nav>
 
-    <main class="dashboard-shell">
+    <main class="dashboard-shell" data-glossify>
         <section class="dash-panel inventory-panel">
             <span class="panel-corner corner-tl" aria-hidden="true">✾</span>
             <span class="panel-corner corner-tr" aria-hidden="true">✾</span>
@@ -122,6 +123,7 @@
             <header class="panel-heading treasury-heading">
                 <div class="wheat-mark" aria-hidden="true">♜</div>
                 <h2>ΑΓΡΟΣ · Treasury of the Field</h2>
+                <span class="ak-pill ak-pill-live ak-tooltip" data-tip="Treasury balances, USYC APY and NAV are read live from /state/balances." title="Treasury balances, USYC APY and NAV are read live from /state/balances." tabindex="0">LIVE</span>
             </header>
 
             <div class="treasury-value">
