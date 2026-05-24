@@ -16,6 +16,7 @@ in `adapters.base`. That is the entire point of this pattern.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from adapters.base import (
     ArcAdapter,
@@ -27,6 +28,9 @@ from adapters.base import (
     USYCAdapter,
 )
 
+if TYPE_CHECKING:
+    from adapters.real.claim_registry import ClaimRegistryReal
+
 
 @dataclass
 class Adapters:
@@ -37,6 +41,7 @@ class Adapters:
     gateway: GatewayAdapter
     nanopayment: NanopaymentAdapter
     arc: ArcAdapter
+    claim_registry: "ClaimRegistryReal"  # Rugpull Oracle (Pivot 1)
 
 
 _singleton: Adapters | None = None
@@ -78,6 +83,7 @@ def _build_real_adapters() -> Adapters:
     from adapters.real.nanopayment import NanopaymentReal
     from adapters.real.polymarket import PolymarketReal
     from adapters.real.usyc import USYCReal
+    from adapters.real.claim_registry import ClaimRegistryReal
 
     wallets = CircleWalletsReal()
     return Adapters(
@@ -88,6 +94,7 @@ def _build_real_adapters() -> Adapters:
         gateway=GatewayReal(wallets),
         nanopayment=NanopaymentReal(),
         arc=ArcReal(wallets),
+        claim_registry=ClaimRegistryReal(wallets),
     )
 
 
