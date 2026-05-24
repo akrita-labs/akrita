@@ -5,6 +5,25 @@
 > `py-clob-client` no longer works against production; this migrates AKRITA's
 > Polymarket write path to the official **`py-clob-client-v2`** SDK.
 
+## Reality check — Amoy testnet is not publicly available (2026-05)
+
+Polymarket's official docs state **all contracts are deployed on Polygon
+mainnet**; there is **no documented public Amoy CLOB host, no Amoy pUSD, and no
+pUSD faucet**. `py-clob-client-v2` ships an `80002` config block, but without a
+public Amoy CLOB API + onramp you cannot place attributed orders there. **The
+only real go-live is Polygon mainnet (real funds).** Confirmed mainnet addresses:
+
+| Contract (Polygon 137) | Address |
+|---|---|
+| pUSD token | `0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB` |
+| Collateral Onramp (USDC→pUSD) | `0x93070a847efEf7F70739046A929D47a521F5B8ee` |
+| CTF Exchange V2 | `0xE111180000d2663C0091e4f400237545B87B996B` |
+| Neg-Risk Exchange V2 | `0xe2222d279d744050d28e00520010520000310F59` |
+| Conditional Tokens | `0x4D97DCd97eC945f40cF65F87097ACe5EA0476045` |
+
+For mainnet go-live: leave `POLY_CHAIN_ID=137`, `POLY_RELAYER_URL=https://clob.polymarket.com`,
+fund the signer with real POL + USDC, wrap at the onramp above, approve, flip the flag.
+
 ## What changed in code
 
 - **`adapters/real/polymarket.py`** — write path (`_get_client` / `submit_quote` /
