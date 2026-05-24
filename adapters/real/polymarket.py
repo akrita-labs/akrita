@@ -9,13 +9,18 @@ Split by capability:
     - get_market_question, get_recent_fills, last trade price.
 
   WRITES (signed orders) — structured, gated on collateral:
-    - submit_quote / cancel_order go through py-clob-client with the V2
-      BuilderConfig that attaches our bytes32 builder code (the thing that
-      earns attribution fees). Polymarket signs orders with a LOCAL EOA key;
-      our keeper wallets are Circle MPC (no extractable key), so the trading
-      EOA is a dedicated signer (secrets/polymarket_signer.json) that holds
-      pUSD collateral. Builder attribution is independent of which wallet
-      signs, so fees still accrue to our registered builder code.
+    - submit_quote / cancel_order go through py-clob-client-v2 (CLOB V2,
+      EIP-712 v2 signing) with a V2 BuilderConfig + per-order builder_code
+      that attaches our bytes32 builder code (the thing that earns
+      attribution fees). Polymarket signs orders with a LOCAL EOA key
+      (signature_type EOA=0); our keeper wallets are Circle MPC (no
+      extractable key), so the trading EOA is a dedicated signer
+      (secrets/polymarket_signer.json) that holds pUSD collateral. Builder
+      attribution is independent of which wallet signs, so fees still accrue
+      to our registered builder code.
+    - Chain is settings.poly_chain_id (137 mainnet / 80002 Amoy testnet);
+      host is settings.poly_relayer_url. L2 API creds are taken from .env if
+      present, otherwise derived from the signer key (create_or_derive_api_key).
 
   Live order submission additionally requires:
     1. The signer EOA funded with pUSD collateral (wrap USDC at the V2
@@ -36,7 +41,6 @@ from shared.config import settings
 
 
 CLOB_BASE = settings.poly_relayer_url or "https://clob.polymarket.com"
-POLYGON_CHAIN_ID = 137
 
 
 def _norm_condition_id(market_id: str) -> str:
@@ -154,8 +158,6 @@ class PolymarketReal:
     def _require_writes_ready(self) -> None:
         if not settings.poly_builder_code:
             raise RuntimeError("POLY_BUILDER_CODE not set — refusing to submit unattributed orders")
-        if not (settings.poly_api_key and settings.poly_api_secret and settings.poly_api_passphrase):
-            raise RuntimeError("Polymarket V2 API creds (key/secret/passphrase) not set")
         signer = Path(__file__).resolve().parents[2] / "secrets" / "polymarket_signer.json"
         if not signer.exists():
             raise RuntimeError(
@@ -167,39 +169,50 @@ class PolymarketReal:
                 "Polymarket collateral not ready. The signer EOA "
                 f"({json.loads(signer.read_text())['address']}) must hold pUSD collateral "
                 "(wrap USDC at the V2 Collateral Onramp) with CTF/exchange allowances "
-                "approved, then set POLY_COLLATERAL_READY=1. See docs/POLYMARKET_LIVE.md."
+                "approved, then set POLY_COLLATERAL_READY=1. See docs/POLYMARKET_CLOB_V2_RUNBOOK.md."
             )
 
     def _get_client(self):
+        """Build (once) the CLOB V2 client signed by the local EOA, carrying the
+        bytes32 builder code. L2 creds come from .env if present, else are
+        derived from the signer key. Raises (via _require_writes_ready) before
+        the V2 SDK is imported, until the signer holds pUSD collateral and
+        POLY_COLLATERAL_READY=1."""
         if self._client is not None:
             return self._client
         self._require_writes_ready()
-        from py_builder_signing_sdk.config import BuilderConfig
-        from py_builder_signing_sdk.sdk_types import BuilderApiKeyCreds
-        from py_clob_client.client import ClobClient
-        from py_clob_client.clob_types import ApiCreds
+
+        from py_clob_client_v2.client import ClobClient
+        from py_clob_client_v2.clob_types import ApiCreds, BuilderConfig
+        from py_clob_client_v2.order_utils.model.signature_type_v2 import SignatureTypeV2
 
         signer = json.loads(
             (Path(__file__).resolve().parents[2] / "secrets" / "polymarket_signer.json").read_text()
         )
-        builder_cfg = BuilderConfig(
-            local_builder_creds=BuilderApiKeyCreds(
-                key=settings.poly_api_key,
-                secret=settings.poly_api_secret,
-                passphrase=settings.poly_api_passphrase,
-            )
-        )
-        self._client = ClobClient(
-            host=CLOB_BASE,
-            chain_id=POLYGON_CHAIN_ID,
-            key=signer["privateKey"],
-            creds=ApiCreds(
+        signer_addr = signer["address"]
+        creds = None
+        if settings.poly_api_key and settings.poly_api_secret and settings.poly_api_passphrase:
+            creds = ApiCreds(
                 api_key=settings.poly_api_key,
                 api_secret=settings.poly_api_secret,
                 api_passphrase=settings.poly_api_passphrase,
+            )
+        client = ClobClient(
+            host=CLOB_BASE,
+            chain_id=settings.poly_chain_id,
+            key=signer["privateKey"],
+            creds=creds,
+            signature_type=SignatureTypeV2.EOA,
+            funder=signer_addr,
+            builder_config=BuilderConfig(
+                builder_address=signer_addr,
+                builder_code=settings.poly_builder_code,
             ),
-            builder_config=builder_cfg,
         )
+        # No configured L2 creds → derive them from the signer key (L1 auth).
+        if creds is None:
+            client.set_api_creds(client.create_or_derive_api_key())
+        self._client = client
         return self._client
 
     async def submit_quote(
@@ -210,18 +223,24 @@ class PolymarketReal:
         size: float,
         builder_code: str,
     ) -> tuple[str, str]:
-        """Submit a bid + ask, both carrying the builder code. Returns
+        """Submit a bid + ask, both carrying the builder code (CLOB V2). Returns
         (bid_order_id, ask_order_id)."""
         import asyncio
 
-        from py_clob_client.clob_types import OrderArgs, OrderType
-        from py_clob_client.order_builder.constants import BUY, SELL
-
+        # _get_client() runs the readiness gate (and raises) BEFORE the V2 SDK
+        # is imported, so the gated path needs neither the package nor network.
         client = self._get_client()
+
+        from py_clob_client_v2.clob_types import OrderArgsV2, OrderType
+        from py_clob_client_v2.order_builder.constants import BUY, SELL
+
         token_id = await self._yes_token_id(_norm_condition_id(market_id))
+        code = builder_code or settings.poly_builder_code
 
         def _place(side: str, price: float) -> str:
-            order = client.create_order(OrderArgs(token_id=token_id, price=price, size=size, side=side))
+            order = client.create_order(
+                OrderArgsV2(token_id=token_id, price=price, size=size, side=side, builder_code=code)
+            )
             resp = client.post_order(order, OrderType.GTC)
             return resp.get("orderID") or resp.get("orderId") or ""
 

@@ -62,9 +62,11 @@ class Settings(BaseSettings):
     # builder registration is signed with this raw key, not a Circle MPC wallet.
     arc_owner_keyfile: str = "secrets/arc_deployer.json"
 
-    # ---------- Polymarket V2 ---------------------------------------------
+    # ---------- Polymarket V2 (CLOB V2) -----------------------------------
     poly_builder_code: str = ""
     poly_relayer_url: str = "https://clob.polymarket.com"
+    # CLOB V2 chain: 137 = Polygon mainnet, 80002 = Amoy testnet.
+    poly_chain_id: int = 137
     poly_api_key: str = ""
     poly_api_secret: str = ""
     poly_api_passphrase: str = ""
