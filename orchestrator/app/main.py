@@ -89,34 +89,20 @@ async def health() -> dict:
     return {"status": "ok"}
 
 
-# Serve the bundled demo dashboard at /  — only if frontend is built.
+# Serve the bundled React dashboard at /  — only if frontend is built.
 # Mounting at "/" intercepts every unmatched route, so we register all the
 # JSON routes above first, then mount static last as the catch-all.
 frontend_dir = pathlib.Path(__file__).resolve().parents[2] / "frontend"
 if (frontend_dir / "index.html").exists():
 
-    def _frontend_page(file_name: str) -> FileResponse:
-        return FileResponse(frontend_dir / file_name)
-
     @app.get("/dashboard", include_in_schema=False)
-    async def dashboard_page() -> FileResponse:
-        return _frontend_page("dashboard.html")
-
     @app.get("/builder", include_in_schema=False)
-    async def builder_page() -> FileResponse:
-        return _frontend_page("builder.html")
-
     @app.get("/leaderboard", include_in_schema=False)
-    async def leaderboard_page() -> FileResponse:
-        return _frontend_page("leaderboard.html")
-
     @app.get("/about", include_in_schema=False)
-    async def about_page() -> FileResponse:
-        return _frontend_page("about.html")
-
     @app.get("/trace", include_in_schema=False)
     @app.get("/trace/{trace_ref:path}", include_in_schema=False)
-    async def trace_page(trace_ref: str = "") -> FileResponse:
-        return _frontend_page("trace.html")
+    async def serve_react_app(trace_ref: str = "") -> FileResponse:
+        return FileResponse(frontend_dir / "index.html")
 
     app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
+

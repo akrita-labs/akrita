@@ -1,3 +1,12 @@
+# Stage 1: Build the React frontend
+FROM oven/bun:1.1-alpine AS frontend-builder
+WORKDIR /build-frontend
+COPY frontend-react/package.json frontend-react/bun.lock* ./
+RUN bun install
+COPY frontend-react ./
+RUN bun run build
+
+# Stage 2: Build the FastAPI orchestrator
 FROM python:3.12-slim
 
 WORKDIR /app
@@ -15,7 +24,9 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 COPY shared /app/shared
 COPY adapters /app/adapters
 COPY orchestrator /app/orchestrator
-COPY frontend /app/frontend
+
+# Copy built React frontend from stage 1 into /app/frontend
+COPY --from=frontend-builder /build-frontend/dist /app/frontend
 
 # Alembic migrations + config — orchestrator runs them at startup.
 COPY alembic.ini /app/alembic.ini
@@ -31,3 +42,4 @@ HEALTHCHECK --interval=15s --timeout=3s --retries=3 \
 
 # Apply pending migrations, then boot.
 CMD ["sh", "-c", "alembic upgrade head && exec uvicorn orchestrator.app.main:app --host 0.0.0.0 --port 8000"]
+

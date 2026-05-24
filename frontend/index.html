@@ -1,108 +1,16 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
+  <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AKRITA AKRITAI — Frontier Keeper</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/static/styles.css" />
-</head>
-<body class="home-page">
-    <div class="parchment-overlay" aria-hidden="true"></div>
-
-    <header class="home-header">
-        <a class="home-brand" href="/" aria-label="AKRITA home">
-            <span class="home-brand-name">AKRITA</span>
-            <span class="home-brand-sub">AKRITAI</span>
-        </a>
-
-        <nav class="home-nav" aria-label="Primary">
-            <a href="/dashboard.html">Dashboard</a>
-            <span aria-hidden="true">·</span>
-            <a href="/trace.html">Trace Viewer</a>
-            <span aria-hidden="true">·</span>
-            <a href="/builder.html">Builder</a>
-            <span aria-hidden="true">·</span>
-            <a href="/about.html">About</a>
-            <span aria-hidden="true">·</span>
-            <a href="https://github.com/akrita-labs/akrita/blob/main/docs/ARCHITECTURE.md">Documentation</a>
-            <span aria-hidden="true">·</span>
-            <a href="https://github.com/akrita-labs/akrita">Github</a>
-        </nav>
-
-        <a class="home-enter" href="/dashboard.html">Enter Keeper</a>
-    </header>
-
-    <main class="home-shell">
-        <section class="hero-copy" aria-labelledby="home-title">
-            <p class="home-kicker">Agora Agents Hackathon · Canteen × Circle × Arc · 2026</p>
-
-            <h1 id="home-title" class="home-title" aria-label="Capital that farms when it is not fighting.">
-                <span class="illuminated-initial" aria-hidden="true">C</span>
-                <span class="title-lines" aria-hidden="true">apital that<br />farms when it<br />is not fighting.</span>
-            </h1>
-
-            <p class="hero-text">
-                Three autonomous agents — NOMOS, SPATHA, AGROS — keep the frontier.
-                Idle collateral sits in USYC earning treasury yield; pUSD margin moves
-                only when fills are imminent. Every decision hashed and anchored on Arc.
-                A keeper modeled on the Byzantine <em>stratiotika ktemata</em>: capital
-                that defends a frontier by remaining productive between engagements.
-            </p>
-
-            <div class="home-divider" aria-hidden="true">
-                <span></span>
-                <b>✠</b>
-                <span></span>
-            </div>
-
-            <div class="hero-actions" aria-label="Primary actions">
-                <a class="hero-button hero-button-primary" href="/dashboard.html">View Live Keeper</a>
-                <a class="hero-button hero-button-secondary" href="https://github.com/akrita-labs/akrita/blob/main/docs/ARCHITECTURE.md">Read the Trace Protocol</a>
-            </div>
-        </section>
-
-        <section class="keeper-plate" aria-label="Annotated frontier keeper figure">
-            <span class="plate-flower plate-flower-tl" aria-hidden="true">✾</span>
-            <span class="plate-flower plate-flower-tr" aria-hidden="true">✾</span>
-            <span class="plate-flower plate-flower-bl" aria-hidden="true">✾</span>
-            <span class="plate-flower plate-flower-br" aria-hidden="true">✾</span>
-
-            <img class="keeper-figure" src="/static/assets/frontier-keeper.png" alt="Sepia manuscript illustration of a Byzantine frontier keeper holding a plow and sword." />
-
-            <div class="figure-label label-akrites">
-                <span>ΑΚΡΙΤΗΣ —</span>
-                <em>the frontier-keeper</em>
-            </div>
-            <div class="figure-label label-agros">
-                <span>ΑΓΡΟΣ —</span>
-                <em>the field that yields</em>
-            </div>
-            <div class="figure-label label-nomos">
-                <span>ΝΟΜΟΣ —</span>
-                <em>the law inscribed</em>
-            </div>
-            <div class="figure-label label-spatha">
-                <span>ΣΠΑΘΑ —</span>
-                <em>the cut at<br />the boundary</em>
-            </div>
-
-            <p class="plate-caption">Composite figure after Cappadocia, c. 950 CE</p>
-        </section>
-    </main>
-
-    <footer class="home-footer">
-        <p>ARC TESTNET — <em>this is not financial advice</em></p>
-        <div class="footer-flourish" aria-hidden="true">
-            <span></span>
-            <b>✾</b>
-            <b>✾</b>
-            <b>✾</b>
-            <span></span>
-        </div>
-        <p>© 2026 SibylFi · Built for the Agora hackathon</p>
-    </footer>
-</body>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

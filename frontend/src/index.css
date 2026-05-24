@@ -47,6 +47,12 @@ html, body {
     overflow-x: hidden;
 }
 
+#root {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
 /* Subtle parchment texture using a noise gradient */
 .parchment-overlay {
     position: fixed;
@@ -926,24 +932,12 @@ body.home-page {
 .home-footer {
     margin-top: 0;
     padding: 18px 54px 24px;
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    gap: 28px;
+    display: flex;
+    justify-content: center;
     align-items: center;
     border-top: 1px solid var(--home-rule);
     color: #4b3822;
     background: rgba(222, 205, 168, 0.22);
-    text-align: left;
-}
-
-.home-footer p {
-    margin: 0;
-    font-size: 16px;
-    font-style: italic;
-}
-
-.home-footer p:last-child {
-    text-align: right;
 }
 
 .footer-flourish {
@@ -1056,13 +1050,7 @@ body.home-page {
     }
 
     .home-footer {
-        grid-template-columns: 1fr;
-        gap: 14px;
         padding-inline: 24px;
-    }
-
-    .home-footer p:last-child {
-        text-align: left;
     }
 
     .footer-flourish span {
@@ -1284,7 +1272,7 @@ body.dashboard-page {
 .dashboard-shell {
     width: 100%;
     max-width: none;
-    height: calc(100vh - 148px);
+    flex: 1;
     min-height: 0;
     margin: 0;
     padding: 14px 20px 16px;
@@ -1292,7 +1280,6 @@ body.dashboard-page {
     grid-template-columns: 1.12fr 0.8fr 1fr;
     grid-template-rows: minmax(330px, 37vh) minmax(0, 1fr);
     gap: 14px;
-    flex: 0 0 calc(100vh - 148px);
     overflow: hidden;
 }
 
@@ -1805,29 +1792,16 @@ body.dashboard-page {
     margin: 0;
     padding: 13px 54px 15px;
     min-height: 66px;
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    gap: 28px;
+    display: flex;
+    justify-content: center;
     align-items: center;
     border-top: 1px solid var(--dash-rule);
     color: #4b3822;
     background: rgba(222, 205, 168, 0.22);
-    text-align: left;
-}
-
-.dashboard-footer p {
-    margin: 0;
-    font-size: 16px;
-    font-style: italic;
-}
-
-.dashboard-footer p:last-child {
-    text-align: right;
 }
 
 @media (max-width: 1200px) {
-    .dashboard-header,
-    .dashboard-footer {
+    .dashboard-header {
         grid-template-columns: 1fr;
         justify-items: start;
     }
@@ -1897,10 +1871,6 @@ body.dashboard-page {
     .dashboard-footer {
         padding-inline: 24px;
     }
-
-    .dashboard-footer p:last-child {
-        text-align: left;
-    }
 }
 
 /* ===== Trace manuscript ================================================== */
@@ -1941,12 +1911,12 @@ body.about-page {
     position: relative;
     width: 100%;
     max-width: none;
-    height: calc(100vh - 161px);
+    flex: 1;
+    min-height: 0;
     margin: 0;
     padding: 16px 42px 0;
     display: grid;
     grid-template-columns: 190px minmax(0, 1fr) 170px;
-    flex: 0 0 calc(100vh - 161px);
     border-left: 1px solid var(--page-rule);
     border-right: 1px solid var(--page-rule);
     overflow: hidden;
@@ -2407,20 +2377,12 @@ body.about-page {
     margin: 0;
     padding: 12px 54px 14px;
     min-height: 78px;
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    gap: 28px;
+    display: flex;
+    justify-content: center;
     align-items: center;
     border-top: 1px solid var(--page-rule);
     color: #4b3822;
     background: rgba(222, 205, 168, 0.22);
-    text-align: left;
-}
-
-.trace-footer p {
-    margin: 0;
-    font-size: 16px;
-    font-style: italic;
 }
 
 .trace-verify-button,
@@ -2461,8 +2423,8 @@ body.about-page {
 }
 
 .builder-sheet {
-    height: calc(100vh - 160px);
-    flex: 0 0 calc(100vh - 160px);
+    flex: 1;
+    min-height: 0;
 }
 
 .about-sheet {
@@ -2777,38 +2739,12 @@ body.about-page {
     margin: 0;
     padding: 13px 28px 15px;
     min-height: 72px;
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    gap: 28px;
+    display: flex;
+    justify-content: center;
     align-items: center;
     border-top: 1px solid var(--page-rule);
     color: #4b3822;
     background: rgba(222, 205, 168, 0.22);
-    text-align: left;
-}
-
-.builder-footer p {
-    margin: 0;
-    font-size: 16px;
-    font-style: italic;
-}
-
-.builder-footer nav {
-    justify-self: end;
-    display: flex;
-    gap: 18px;
-}
-
-.builder-footer nav a {
-    color: var(--page-ink);
-    font-family: var(--font-display);
-    font-size: 17px;
-    text-decoration: none;
-}
-
-.builder-footer nav a + a {
-    border-left: 1px solid var(--page-rule);
-    padding-left: 18px;
 }
 
 .about-sheet {
@@ -3054,11 +2990,9 @@ body.about-page {
 
     .trace-footer,
     .builder-footer {
-        grid-template-columns: 1fr;
         padding-inline: 24px;
     }
 
-    .trace-verify-button,
     .builder-cta {
         justify-self: stretch;
     }
