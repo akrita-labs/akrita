@@ -17,9 +17,8 @@ router = APIRouter()
 
 
 class IssueClaimReq(BaseModel):
-    pair: str  # e.g. "PEPE/USDC"
-    exchange: str | None = None
-    source_commit: str = ""
+    token_address: str  # ERC-20 contract address to screen via GoPlus
+    chain_id: int | None = None  # defaults to settings.goplus_chain_id
 
 
 class ResolveReq(BaseModel):
@@ -62,14 +61,14 @@ async def get_claim(claim_id: int) -> dict:
 
 @router.post("/issue")
 async def issue_claim(req: IssueClaimReq) -> dict:
-    """Operator/demo: issue a signed rug-risk claim end-to-end (trace -> anchor
-    -> register). 503 until the oracle is wired (keepers + deployed registry)."""
-    from agents.nomos.claim_issuer import issue_for_addition
-    from shared.config import settings
+    """Operator/demo: screen a token via GoPlus and, if flagged, issue a signed
+    rug-risk claim end-to-end (trace -> anchor -> register). Unflagged tokens
+    return flagged:false without touching the chain. 503 if the oracle isn't
+    wired (keepers + deployed registry)."""
+    from agents.nomos.claim_issuer import issue_for_token
 
-    exchange = req.exchange or settings.nfi_blacklist_exchange
     try:
-        return await issue_for_addition(get_adapters(), req.pair, exchange, req.source_commit)
+        return await issue_for_token(get_adapters(), req.token_address, req.chain_id)
     except Exception as e:
         raise HTTPException(503, f"oracle not ready: {e}")
 

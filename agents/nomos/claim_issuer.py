@@ -1,39 +1,23 @@
 """
 NOMOS — rug-risk claim issuer (orchestration glue).
 
-Ties the pieces together: an NFI blacklist addition -> reasoning trace -> anchor
-on Arc (TraceRegistry via ArcReal) -> register the claim (ClaimRegistry). Pure
-helpers (credibility, decision id, bytes32 packing) are import-safe; the async
-issue flow drives the adapter container. End-to-end is unverified until
+Ties the GoPlus signal to the chain: screen a token via GoPlus -> if it trips the
+rug-risk rules, build the reasoning trace -> anchor it on Arc (TraceRegistry via
+ArcReal) -> register the claim (ClaimRegistry). Pure helpers are import-safe; the
+async issue flow drives the adapter container. End-to-end is live once
 ClaimRegistry is deployed (CLAIM_REGISTRY_ADDR) and the keeper can sign.
 """
 from __future__ import annotations
 
 import time
-from typing import Optional
+from typing import Iterable, Optional
 
 from agents.nomos.claim_trace import build_claim_trace, claim_trace_hash
-from agents.nomos.nfi_watcher import build_claim_record, diff_additions, fetch_blacklist
+from agents.nomos.goplus_screen import build_claim_record, evaluate_risk, fetch_token_security
 from shared.canonical import canonical_json
 from shared.config import settings
 
 _NOMOS_AGENT_ID = 1  # matches BuilderRegistry / TraceRegistry agent ids
-
-
-def source_commit_b32(commit: str) -> str:
-    """Pack a git commit sha (40 hex) into a 0x bytes32 hex (left-padded)."""
-    h = (commit or "").replace("0x", "")[:64]
-    return "0x" + h.rjust(64, "0")
-
-
-def credibility_for(record: dict) -> float:
-    """NOMOS's read on rug risk from the NFI signal, bounded [0,1].
-
-    NFI is a reputable, actively-maintained source, so a blacklist addition is a
-    strong prior. A deliberate placeholder for later on-chain features (liquidity,
-    token age, holder concentration) — recorded in the trace, not yet a gate.
-    """
-    return 0.85
 
 
 def next_decision_id() -> int:
@@ -41,37 +25,48 @@ def next_decision_id() -> int:
     return int(time.time() * 1000)
 
 
-async def issue_for_addition(
+async def issue_for_token(
     adapters,
-    pair: str,
-    exchange: str,
-    source_commit: str,
+    address: str,
+    chain_id: Optional[int] = None,
     *,
     decision_id: Optional[int] = None,
     window_s: Optional[int] = None,
     drop_threshold_bps: Optional[int] = None,
 ) -> dict:
-    """Issue one signed rug-risk claim end-to-end and return a summary.
-
-    Order matters: the trace is anchored on Arc BEFORE the claim is registered,
-    so the on-chain attestation always predates (or coincides with) the claim.
+    """Screen one token via GoPlus; if flagged, issue a signed rug-risk claim
+    end-to-end and return a summary. Unflagged tokens return `{flagged: False}`
+    without touching the chain. The trace is anchored on Arc BEFORE the claim is
+    registered, so the on-chain attestation never post-dates the claim.
     """
+    chain_id = chain_id if chain_id is not None else settings.goplus_chain_id
     window_s = window_s or settings.claim_window_s
     drop_threshold_bps = drop_threshold_bps or settings.claim_drop_threshold_bps
-    decision_id = decision_id or next_decision_id()
 
+    rec = await fetch_token_security(address, chain_id)
+    if not rec:
+        return {"address": address.lower(), "flagged": False, "error": "goplus: no data"}
+    risk = evaluate_risk(rec)
+    if not risk["flagged"]:
+        return {
+            "address": address.lower(),
+            "token": rec.get("token_symbol"),
+            "flagged": False,
+            "reasons": [],
+        }
+
+    decision_id = decision_id or next_decision_id()
     record = build_claim_record(
-        pair, exchange, source_commit, window_s=window_s, drop_threshold_bps=drop_threshold_bps
+        address, chain_id, rec, risk, window_s=window_s, drop_threshold_bps=drop_threshold_bps
     )
-    credibility = credibility_for(record)
-    body = build_claim_trace(record, credibility=credibility, decision_id=decision_id)
+    body = build_claim_trace(record, decision_id=decision_id)
     hash_hex = claim_trace_hash(body)
 
     cid = await adapters.nanopayment.pin_to_ipfs(canonical_json(body))
     anchor = await adapters.arc.commit_trace(_NOMOS_AGENT_ID, decision_id, hash_hex, cid)
     issue = await adapters.claim_registry.issue_claim(
         record["token_id"],
-        source_commit_b32(source_commit),
+        record["provenance"],  # already a 0x sha256 (bytes32)
         hash_hex,
         cid,
         window_s,
@@ -79,36 +74,30 @@ async def issue_for_addition(
     )
     return {
         "token": record["token"],
+        "address": record["address"],
         "token_id": record["token_id"],
+        "flagged": True,
+        "reasons": record["reasons"],
         "decision_id": decision_id,
         "trace_hash": hash_hex,
         "ipfs_cid": cid,
         "arc_tx": getattr(anchor, "tx_hash", None),
         "claim_tx": getattr(issue, "tx_hash", None),
-        "credibility": credibility,
     }
 
 
-async def run_once(
+async def screen_watchlist(
     adapters,
-    last_seen: set[str],
+    tokens: Iterable[str],
     *,
-    exchange: Optional[str] = None,
-) -> tuple[list[dict], set[str]]:
-    """Poll the NFI blacklist once; issue a claim per *new* addition.
-
-    Returns (issued_summaries, updated_seen). On a cold start (`last_seen` empty)
-    this seeds the baseline without issuing, so a continuous loop doesn't backfill
-    the entire existing blacklist as "new". A bad single claim is captured, never
-    raised, so one failure can't stall the loop.
-    """
-    exchange = exchange or settings.nfi_blacklist_exchange
-    pairs, commit = await fetch_blacklist(exchange, repo=settings.nfi_repo)
-    additions = diff_additions(last_seen, pairs) if last_seen else []
-    issued: list[dict] = []
-    for pair in additions:
+    chain_id: Optional[int] = None,
+) -> list[dict]:
+    """Screen a list of token addresses; issue claims for the flagged ones.
+    One bad token is captured, never raised, so it can't stall the screen."""
+    out: list[dict] = []
+    for addr in tokens:
         try:
-            issued.append(await issue_for_addition(adapters, pair, exchange, commit))
+            out.append(await issue_for_token(adapters, addr, chain_id))
         except Exception as e:
-            issued.append({"pair": pair, "error": str(e)})
-    return issued, pairs
+            out.append({"address": str(addr).lower(), "error": str(e)})
+    return out

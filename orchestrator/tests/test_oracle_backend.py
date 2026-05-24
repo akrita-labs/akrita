@@ -1,18 +1,6 @@
-"""Pure unit tests for the Rugpull Oracle backend helpers (Phase 3 tail)."""
+"""Pure unit tests for the Rugpull Oracle backend helpers (AGROS/SPATHA reframe)."""
 from agents.agros.bond_treasury import bond_funding_plan, idle_to_usyc
-from agents.nomos.claim_issuer import credibility_for, source_commit_b32
 from agents.spatha.claim_hedge import claim_hedge_plan
-
-
-def test_source_commit_b32_pads_to_bytes32():
-    b = source_commit_b32("abc123")
-    assert b.startswith("0x") and len(b) == 66
-    assert b.endswith("abc123")
-
-
-def test_credibility_bounded():
-    c = credibility_for({"token": "PEPE"})
-    assert 0.0 <= c <= 1.0
 
 
 def test_bond_funding_plan_shortfall_triggers_gateway():

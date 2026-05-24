@@ -74,10 +74,12 @@ class Settings(BaseSettings):
     poly_collateral_ready: bool = False
 
     # ---------- Rugpull Oracle (Pivot 1) ----------------------------------
-    # ClaimRegistry on Arc (signed NFI blacklist rug-risk claims + bond market).
+    # ClaimRegistry on Arc (signed GoPlus rug-risk claims + bond market).
     claim_registry_addr: str = ""
-    nfi_repo: str = "iterativv/NostalgiaForInfinity"
-    nfi_blacklist_exchange: str = "hyperliquid"
+    # GoPlus token-security signal: chain to screen + a comma-separated watchlist
+    # of token addresses NOMOS screens for rug-risk flags.
+    goplus_chain_id: int = 1  # Ethereum mainnet
+    goplus_watchlist: str = ""
     claim_window_s: int = 604800  # 7 days
     claim_drop_threshold_bps: int = 5000  # 50%
     # Gateway source chain that funds the Arc bond pool (set when funded).
