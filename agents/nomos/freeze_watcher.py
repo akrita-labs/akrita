@@ -146,3 +146,49 @@ async def fetch_freezes(
             await client.aclose()
     out.sort(key=lambda r: r["block"], reverse=True)
     return out
+
+
+ETHERSCAN_API = "https://api.etherscan.io/api"
+
+
+async def fetch_freezes_etherscan(
+    api_key: str,
+    *,
+    from_block: int = 0,
+    to_block: str = "latest",
+    client: Optional[httpx.AsyncClient] = None,
+) -> list[dict]:
+    """Deeper historical backfill via Etherscan's logs API (no narrow RPC range
+    cap). Used when an Etherscan key is configured; returns [] on failure. Same
+    log shape as eth_getLogs, so build_freeze_record applies unchanged."""
+    if not api_key:
+        return []
+    own = client is None
+    client = client or httpx.AsyncClient(timeout=25.0, headers={"User-Agent": "akrita-nomos"})
+    out: list[dict] = []
+    try:
+        for issuer in ISSUERS:
+            try:
+                r = await client.get(
+                    ETHERSCAN_API,
+                    params={
+                        "module": "logs",
+                        "action": "getLogs",
+                        "address": issuer["address"],
+                        "topic0": issuer["topic0"],
+                        "fromBlock": from_block,
+                        "toBlock": to_block,
+                        "apikey": api_key,
+                    },
+                )
+                d = r.json()
+                if str(d.get("status")) == "1":
+                    for log in d.get("result") or []:
+                        out.append(build_freeze_record(log, issuer))
+            except (httpx.HTTPError, ValueError):
+                continue
+    finally:
+        if own:
+            await client.aclose()
+    out.sort(key=lambda r: r["block"], reverse=True)
+    return out

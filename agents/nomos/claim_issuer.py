@@ -16,6 +16,7 @@ from agents.nomos.claim_trace import build_claim_trace, claim_trace_hash
 from agents.nomos.freeze_watcher import (
     build_freeze_trace,
     fetch_freezes,
+    fetch_freezes_etherscan,
     freeze_decision_id,
     freeze_trace_hash,
 )
@@ -138,10 +139,14 @@ async def issue_for_freeze(adapters, rec: dict, *, decision_id: Optional[int] = 
     }
 
 
-async def scan_freezes(adapters, *, limit: Optional[int] = None) -> list[dict]:
+async def scan_freezes(adapters, *, limit: Optional[int] = None, deep: bool = False) -> list[dict]:
     """Read recent USDT/USDC freezes and attest each on Arc. Idempotent per
-    freeze; one failure is captured, never raised."""
-    recs = await fetch_freezes(settings.eth_rpc_url, lookback_blocks=settings.freeze_lookback_blocks)
+    freeze; one failure is captured, never raised. `deep=True` uses Etherscan
+    (when ETHERSCAN_API_KEY is set) for full history instead of the RPC window."""
+    if deep and settings.etherscan_api_key:
+        recs = await fetch_freezes_etherscan(settings.etherscan_api_key, from_block=0)
+    else:
+        recs = await fetch_freezes(settings.eth_rpc_url, lookback_blocks=settings.freeze_lookback_blocks)
     if limit:
         recs = recs[:limit]
     out: list[dict] = []

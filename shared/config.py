@@ -82,6 +82,12 @@ class Settings(BaseSettings):
     eth_rpc_url: str = "https://eth-pokt.nodies.app"
     etherscan_api_key: str = ""
     freeze_lookback_blocks: int = 90000  # ~2 weeks
+    # Continuous freeze-oracle loop (opt-in). When enabled the orchestrator
+    # auto-attests new USDT/USDC freezes every interval. Default OFF — no
+    # autonomous on-chain writes unless explicitly turned on.
+    freeze_oracle_enabled: bool = False
+    freeze_oracle_interval_s: int = 600
+    freeze_oracle_limit: int = 5
     # GoPlus token-security signal: chain to screen + a comma-separated watchlist
     # of token addresses NOMOS screens for rug-risk flags.
     goplus_chain_id: int = 1  # Ethereum mainnet
