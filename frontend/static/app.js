@@ -159,7 +159,7 @@
             <div class="decision-row">
                 <div class="decision-id">#${d.decision_id} · ${new Date(d.ts_ms).toLocaleTimeString()}</div>
                 <div class="decision-summary">${decisionSummary(d)}</div>
-                ${d.trace_hash ? `<div class="decision-hash"><a href="/trace.html?hash=${d.trace_hash}">trace ${shortHash(d.trace_hash)}</a></div>` : ""}
+                ${d.trace_hash ? `<div class="decision-hash"><a href="/app/trace?hash=${d.trace_hash}">trace ${shortHash(d.trace_hash)}</a></div>` : ""}
             </div>
         `).join("");
     }
@@ -176,7 +176,7 @@
                 <span>#${t.decision_id}</span>
                 <span class="trace-hash">${shortHash(t.trace_hash)}</span>
                 <span class="trace-cid">cid ${shortCid(t.ipfs_cid)}</span>
-                <span><a class="trace-verify-link" href="/trace.html?hash=${t.trace_hash}">verify →</a></span>
+                <span><a class="trace-verify-link" href="/app/trace?hash=${t.trace_hash}">verify →</a></span>
             </div>
         `).join("");
     }

@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AKRITA AKRITAI — Builder Profile</title>
+    <title>AKRITA — Builder Profile</title>
+    <link rel="icon" type="image/png" href="/static/assets/akrita-emblem.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -16,27 +17,30 @@
 
     <header class="home-header builder-site-header">
         <a class="home-brand" href="/" aria-label="AKRITA home">
-            <span class="home-brand-name">AKRITA</span>
-            <span class="home-brand-sub">AKRITAI</span>
+            <img class="brand-emblem" src="/static/assets/akrita-emblem.png" alt="" aria-hidden="true" />
+            <span class="brand-wordmark">
+                <span class="home-brand-name">AKRITA</span>
+                <span class="home-brand-sub">AKRITAI</span>
+            </span>
         </a>
 
         <nav class="home-nav" aria-label="Primary">
-            <a href="/dashboard.html">Dashboard</a>
+            <a href="/app/dashboard">Dashboard</a>
             <span aria-hidden="true">·</span>
-            <a href="/leaderboard.html">Leaderboard</a>
+            <a href="/app/leaderboard">Leaderboard</a>
             <span aria-hidden="true">·</span>
-            <a href="/personalize.html">Personalize</a>
+            <a href="/app/personalize">Personalize</a>
             <span aria-hidden="true">·</span>
-            <a href="/trace.html">Trace Viewer</a>
+            <a href="/app/trace">Trace Viewer</a>
             <span aria-hidden="true">·</span>
-            <a href="/builder.html">Builder</a>
+            <a href="/app/builder">Builder</a>
             <span aria-hidden="true">·</span>
-            <a href="/about.html">About</a>
+            <a href="/about">About</a>
             <span aria-hidden="true">·</span>
             <a href="https://github.com/akrita-labs/akrita">Github</a>
         </nav>
 
-        <a class="home-enter" href="/dashboard.html">Enter Keeper</a>
+        <a class="home-enter" href="/login">Enter Keeper</a>
     </header>
 
     <main class="builder-sheet" data-glossify>
@@ -51,10 +55,10 @@
                 <span>✺</span>
             </div>
             <div>
-                <h1 id="builder-title">Polymarket V2 · Builder Profile</h1>
+                <h1 id="builder-title">Builder Profile</h1>
                 <p id="builder-subtitle"><em>Builder code</em> loading... · attribution <strong>checking</strong></p>
             </div>
-            <a class="builder-cta" id="builder-cta" href="/leaderboard">View Leaderboard</a>
+            <a class="builder-cta" id="builder-cta" href="/app/leaderboard">View Leaderboard</a>
         </section>
 
         <section class="builder-chart-panel">
@@ -103,6 +107,8 @@
                 <h2>Recent Attributed Fills · Live Register</h2>
             </header>
 
+            <div class="ak-live-panel" id="builder-fills-empty" hidden></div>
+
             <table class="builder-register">
                 <thead>
                     <tr><th></th><th>Time</th><th>Market</th><th>Side</th><th>Details</th><th>Fee (USDC)</th><th>Tx Hash</th></tr>
@@ -112,7 +118,7 @@
                 </tbody>
             </table>
 
-            <a class="show-earlier" href="/leaderboard">Open leaderboard</a>
+            <a class="show-earlier" href="/app/leaderboard">Open leaderboard</a>
         </section>
     </main>
 
@@ -122,9 +128,9 @@
             <span></span><b>✾</b><b>✾</b><b>✾</b><span></span>
         </div>
         <nav aria-label="Builder footer links">
-            <a href="/dashboard.html">Dashboard</a>
-            <a href="/trace.html">Trace Viewer</a>
-            <a href="/builder.html">Builder Profile</a>
+            <a href="/app/dashboard">Dashboard</a>
+            <a href="/app/trace">Trace Viewer</a>
+            <a href="/app/builder">Builder Profile</a>
         </nav>
     </footer>
 </body>

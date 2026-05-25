@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AKRITA AKRITAI — Operator Profile</title>
+    <title>AKRITA — Operator Profile</title>
+    <link rel="icon" type="image/png" href="/static/assets/akrita-emblem.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -76,19 +77,22 @@
 
     <header class="home-header builder-site-header">
         <a class="home-brand" href="/" aria-label="AKRITA home">
-            <span class="home-brand-name">AKRITA</span>
-            <span class="home-brand-sub">AKRITAI</span>
+            <img class="brand-emblem" src="/static/assets/akrita-emblem.png" alt="" aria-hidden="true" />
+            <span class="brand-wordmark">
+                <span class="home-brand-name">AKRITA</span>
+                <span class="home-brand-sub">AKRITAI</span>
+            </span>
         </a>
         <nav class="home-nav" aria-label="Primary">
-            <a href="/dashboard.html">Dashboard</a>
+            <a href="/app/dashboard">Dashboard</a>
             <span aria-hidden="true">·</span>
-            <a href="/leaderboard.html">Leaderboard</a>
+            <a href="/app/leaderboard">Leaderboard</a>
             <span aria-hidden="true">·</span>
-            <a href="/personalize">Personalize</a>
+            <a href="/app/personalize">Personalize</a>
             <span aria-hidden="true">·</span>
-            <a href="/about.html">About</a>
+            <a href="/about">About</a>
         </nav>
-        <a class="home-enter" href="/dashboard.html">Enter Keeper</a>
+        <a class="home-enter" href="/login">Enter Keeper</a>
     </header>
 
     <main class="ap-shell" data-glossify>
@@ -134,7 +138,7 @@
 
         <div class="ap-share">
             <button type="button" class="ap-btn" id="ap-copy">Copy Share Link</button>
-            <a class="ap-btn" id="ap-leaderboard-link" href="/leaderboard.html">View Leaderboard</a>
+            <a class="ap-btn" id="ap-leaderboard-link" href="/app/leaderboard">View Leaderboard</a>
         </div>
         <p class="ap-foot-note" id="ap-updated"></p>
     </main>
@@ -143,9 +147,9 @@
         <p>ARC TESTNET — <em>this is not financial advice</em></p>
         <div class="footer-flourish" aria-hidden="true"><span></span><b>✾</b><b>✾</b><b>✾</b><span></span></div>
         <nav aria-label="Footer links">
-            <a href="/dashboard.html">Dashboard</a>
-            <a href="/leaderboard.html">Leaderboard</a>
-            <a href="/about.html">About</a>
+            <a href="/app/dashboard">Dashboard</a>
+            <a href="/app/leaderboard">Leaderboard</a>
+            <a href="/about">About</a>
         </nav>
     </footer>
 

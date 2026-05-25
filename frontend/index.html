@@ -3,64 +3,58 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AKRITA AKRITAI — Frontier Keeper</title>
+    <title>AKRITA — Autonomous Rugpull Oracle</title>
+    <link rel="icon" type="image/png" href="/static/assets/akrita-emblem.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/static/styles.css" />
     <script defer src="/static/components.js"></script>
 </head>
-<body class="home-page" data-ak="nav,glossary,pills">
+<body class="home-page home-landing" data-ak="glossary,pills">
     <div class="parchment-overlay" aria-hidden="true"></div>
 
     <header class="home-header">
         <a class="home-brand" href="/" aria-label="AKRITA home">
-            <span class="home-brand-name">AKRITA</span>
-            <span class="home-brand-sub">AKRITAI</span>
+            <img class="brand-emblem" src="/static/assets/akrita-emblem.png" alt="" aria-hidden="true" />
+            <span class="brand-wordmark">
+                <span class="home-brand-name">AKRITA</span>
+                <span class="home-brand-sub">autonomous rugpull oracle</span>
+            </span>
         </a>
 
         <nav class="home-nav" aria-label="Primary">
-            <a href="/dashboard.html">Dashboard</a>
-            <span aria-hidden="true">·</span>
-            <a href="/leaderboard.html">Leaderboard</a>
-            <span aria-hidden="true">·</span>
-            <a href="/personalize.html">Personalize</a>
-            <span aria-hidden="true">·</span>
-            <a href="/trace.html">Trace Viewer</a>
-            <span aria-hidden="true">·</span>
-            <a href="/builder.html">Builder</a>
-            <span aria-hidden="true">·</span>
-            <a href="/about.html">About</a>
-            <span aria-hidden="true">·</span>
-            <a href="https://github.com/akrita-labs/akrita/blob/main/docs/ARCHITECTURE.md">Documentation</a>
-            <span aria-hidden="true">·</span>
-            <a href="https://github.com/akrita-labs/akrita">Github</a>
+            <a href="/" class="is-active" aria-current="page">Overview</a>
+            <a href="/agents">Agents</a>
+            <a href="/proof">Proof</a>
+            <a href="/about">About</a>
+            <a href="https://github.com/akrita-labs/akrita" target="_blank" rel="noopener">GitHub</a>
         </nav>
 
-        <a class="home-enter" href="/dashboard.html">Enter Keeper</a>
+        <a class="home-enter" href="/login">Enter to the Keeper</a>
     </header>
 
     <main class="home-shell" data-glossify>
-        <section class="hero-copy" aria-labelledby="home-title">
+        <section id="overview" class="hero-copy" aria-labelledby="home-title">
             <p class="home-kicker">Agora Agents Hackathon · Canteen × Circle × Arc · 2026</p>
 
             <h1 id="home-title" class="home-title" aria-label="Capital that farms when it is not fighting.">
-                <span class="illuminated-initial" aria-hidden="true">C</span>
+                <span class="illuminated-initial" aria-hidden="true">
+                    <img src="/static/assets/letter-c.png" alt="" />
+                </span>
                 <span class="title-lines" aria-hidden="true">apital that<br />farms when it<br />is not fighting.</span>
             </h1>
 
             <p class="hero-text">
-                Three autonomous keepers —
-                <abbr class="ak-gloss ak-tooltip" data-term="NOMOS" data-tip="NOMOS / Market Maker - The pricing agent that posts and updates Polymarket quotes." title="NOMOS / Market Maker - The pricing agent that posts and updates Polymarket quotes." tabindex="0">NOMOS</abbr>
-                (Market Maker),
-                <abbr class="ak-gloss ak-tooltip" data-term="SPATHA" data-tip="SPATHA / Hedger - The risk agent that offsets inventory when exposure gets too large." title="SPATHA / Hedger - The risk agent that offsets inventory when exposure gets too large." tabindex="0">SPATHA</abbr>
-                (Hedger), and
-                <abbr class="ak-gloss ak-tooltip" data-term="AGROS" data-tip="AGROS / Treasury - The treasury agent that keeps idle collateral productive between trades." title="AGROS / Treasury - The treasury agent that keeps idle collateral productive between trades." tabindex="0">AGROS</abbr>
-                (Treasury) — keep capital productive between trades. Idle collateral
-                sits in USYC earning treasury yield; pUSD margin moves only when fills
-                are imminent. Every decision is hashed and anchored on Arc. A keeper
-                modeled on the Byzantine <em>stratiotika ktemata</em>: capital that
-                defends a frontier by remaining productive between engagements.
+                Three signed agents keep the frontier honest. NOMOS (Claim Issuer)
+                watches Ethereum for real rug signals — a stablecoin issuer freezing an
+                address as illicit, a token-security failure — and inscribes each as a
+                signed rug-risk claim. SPATHA (Risk Sentinel) stakes the bond market for
+                or against it; AGROS (Treasury) keeps idle collateral earning USYC yield
+                between resolutions. Every claim is hashed and anchored on Arc —
+                provenance from signal to on-chain attestation. A keeper modeled on the
+                Byzantine <em>stratiotika ktemata</em>: capital that defends a frontier
+                by remaining productive between engagements.
             </p>
 
             <div class="home-divider" aria-hidden="true">
@@ -70,7 +64,7 @@
             </div>
 
             <div class="hero-actions" aria-label="Primary actions">
-                <a class="hero-button hero-button-primary" href="/dashboard.html">View Live Keeper</a>
+                <a class="hero-button hero-button-primary" href="/login">Enter to the Keeper</a>
                 <a class="hero-button hero-button-secondary" href="https://github.com/akrita-labs/akrita/blob/main/docs/ARCHITECTURE.md">Read the Trace Protocol</a>
             </div>
         </section>
@@ -102,24 +96,6 @@
 
             <p class="plate-caption">Composite figure after Cappadocia, c. 950 CE</p>
         </section>
-
-        <section class="home-triumvirate about-grid" aria-label="The three AKRITA agents">
-            <article>
-                <span>NOMOS / Market Maker</span>
-                <h2>Prices the market</h2>
-                <p>Maintains bid and ask quotes, then writes the reasoning trace before execution.</p>
-            </article>
-            <article>
-                <span>SPATHA / Hedger</span>
-                <h2>Contains exposure</h2>
-                <p>Reads inventory drift, opens hedges when gates allow it, and records blocked execution honestly.</p>
-            </article>
-            <article>
-                <span>AGROS / Treasury</span>
-                <h2>Keeps idle capital working</h2>
-                <p>Balances operating liquidity with yield-bearing treasury assets while preserving the audit trail.</p>
-            </article>
-        </section>
     </main>
 
     <footer class="home-footer">
@@ -131,7 +107,7 @@
             <b>✾</b>
             <span></span>
         </div>
-        <p>© 2026 SibylFi · Built for the Agora hackathon</p>
+        <p>© 2026 AKRITA · Built for the Agora hackathon</p>
     </footer>
 </body>
 </html>

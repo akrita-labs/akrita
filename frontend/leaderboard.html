@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AKRITA — Operator Leaderboard</title>
+    <link rel="icon" type="image/png" href="/static/assets/akrita-emblem.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -74,8 +75,11 @@
 
     <header class="dashboard-header">
         <a class="dashboard-brand" href="/" aria-label="AKRITA home">
-            <span class="dashboard-brand-name">AKRITA</span>
-            <span class="dashboard-brand-sub">AKRITAI</span>
+            <img class="brand-emblem" src="/static/assets/akrita-emblem.png" alt="" aria-hidden="true" />
+            <span class="brand-wordmark">
+                <span class="dashboard-brand-name">AKRITA</span>
+                <span class="dashboard-brand-sub">AKRITAI</span>
+            </span>
         </a>
         <div class="dashboard-network">
             <span class="network-cross" aria-hidden="true">✠</span>
@@ -87,11 +91,11 @@
     </header>
 
     <nav class="dashboard-nav" aria-label="Primary">
-        <a href="/dashboard">Dashboard</a>
-        <a href="/leaderboard" class="is-active">Leaderboard</a>
-        <a href="/personalize">Personalize</a>
-        <a href="/builder">Builder</a>
-        <a href="/trace">Trace Viewer</a>
+        <a href="/app/dashboard">Dashboard</a>
+        <a href="/app/leaderboard" class="is-active">Leaderboard</a>
+        <a href="/app/personalize">Personalize</a>
+        <a href="/app/builder">Builder</a>
+        <a href="/app/trace">Trace Viewer</a>
         <a href="/about">About</a>
     </nav>
 
@@ -144,8 +148,8 @@
         <p>ARC TESTNET — <em>this is not financial advice</em></p>
         <div class="footer-flourish" aria-hidden="true"><span></span><b>✾</b><b>✾</b><b>✾</b><span></span></div>
         <nav aria-label="Footer links">
-            <a href="/dashboard">Dashboard</a>
-            <a href="/builder">Builder Profile</a>
+            <a href="/app/dashboard">Dashboard</a>
+            <a href="/app/builder">Builder Profile</a>
             <a href="/about">About</a>
         </nav>
     </footer>

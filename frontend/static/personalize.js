@@ -364,10 +364,7 @@
         var btn = $("agros-consent-btn");
         if (!btn) return;
         btn.addEventListener("click", async function () {
-            if (readOnly) {
-                flash("agros-consent-status", "Demo mode — connect an operator to sign.");
-                return;
-            }
+            if (!ensureOperator()) return;
             btn.disabled = true;
             try {
                 var res = await fetch(API + "/api/onboarding/consent/susde", {
@@ -386,6 +383,24 @@
     function flash(id, msg) {
         var e = $(id);
         if (e) { e.textContent = msg; e.style.display = "block"; }
+    }
+
+    // Request a wallet / operator identity at the moment a state-changing action
+    // fires (save strategy, sign risk acceptance) — never via a persistent
+    // chrome button. Hydrates the operator state in place and returns truthy
+    // once an identity is resolved.
+    function ensureOperator() {
+        if (!userId) {
+            userId = (window.AKRITA && window.AKRITA.connectWallet)
+                ? window.AKRITA.connectWallet()
+                : SANDBOX_USER;
+            try { localStorage.setItem("akrita.user", userId); } catch (e) {}
+            readOnly = false;
+            setText("operator-id", "operator " + userId);
+            var banner = $("demo-banner");
+            if (banner) banner.style.display = "none";
+        }
+        return !!userId;
     }
 
     function isSandboxUser() {
@@ -490,10 +505,8 @@
 
     async function save() {
         var status = $("save-status");
-        if (readOnly) {
-            if (status) { status.textContent = "Read-only demo — connect the sandbox wallet to stage a sign-to-deploy confirmation."; status.style.display = "block"; }
-            return;
-        }
+        // Saving a strategy is the state-changing action that requests a wallet.
+        if (!ensureOperator()) return;
         var confirmed = await confirmDeploy();
         if (!confirmed) {
             if (status) { status.textContent = "Deploy confirmation cancelled."; status.style.display = "block"; }

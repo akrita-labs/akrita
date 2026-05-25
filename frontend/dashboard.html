@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AKRITA AKRITAI — Dashboard</title>
+    <title>AKRITA — Keeper Overview</title>
+    <link rel="icon" type="image/png" href="/static/assets/akrita-emblem.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -36,13 +37,16 @@
 
     <header class="dashboard-header">
         <a class="dashboard-brand" href="/" aria-label="AKRITA home">
-            <span class="dashboard-brand-name">AKRITA</span>
-            <span class="dashboard-brand-sub">AKRITAI</span>
+            <img class="brand-emblem" src="/static/assets/akrita-emblem.png" alt="" aria-hidden="true" />
+            <span class="brand-wordmark">
+                <span class="dashboard-brand-name">AKRITA</span>
+                <span class="dashboard-brand-sub">AKRITAI</span>
+            </span>
         </a>
 
         <div class="dashboard-network">
             <span class="network-cross" aria-hidden="true">✠</span>
-            <span>Arc testnet · block <b id="arc-block">#1,847,293</b></span>
+            <span>Arc testnet · block <b id="arc-block">#—</b></span>
         </div>
 
         <div class="dashboard-live">
@@ -52,11 +56,11 @@
     </header>
 
     <nav class="dashboard-nav" aria-label="Primary">
-        <a href="/dashboard" class="is-active">Dashboard</a>
-        <a href="/leaderboard">Leaderboard</a>
-        <a href="/personalize">Personalize</a>
-        <a href="/builder">Builder</a>
-        <a href="/trace">Trace Viewer</a>
+        <a href="/app/dashboard" class="is-active">Dashboard</a>
+        <a href="/app/leaderboard">Leaderboard</a>
+        <a href="/app/personalize">Personalize</a>
+        <a href="/app/builder">Builder</a>
+        <a href="/app/trace">Trace Viewer</a>
         <a href="/about">About</a>
     </nav>
 
@@ -154,7 +158,7 @@
 
             <header class="panel-heading attribution-heading">
                 <div class="scroll-mark" aria-hidden="true">☞</div>
-                <h2>Polymarket Builder Attribution</h2>
+                <h2>Builder Attribution</h2>
             </header>
 
             <div class="fees-total">
@@ -268,7 +272,7 @@
             <b>✾</b>
             <span></span>
         </div>
-        <p>© 2026 SibylFi · Built for the Agora hackathon</p>
+        <p>© 2026 AKRITA · Built for the Agora hackathon</p>
     </footer>
 
     <script src="/static/dashboard.js"></script>

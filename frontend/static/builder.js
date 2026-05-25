@@ -79,7 +79,7 @@
             dataPill(row);
         $("builder-title").textContent = (row && (row.display_name || row.handle))
             ? (row.display_name || row.handle) + " · Builder Profile"
-            : "Polymarket V2 · Builder Profile";
+            : "Builder Profile";
         $("builder-subtitle").innerHTML = subtitle;
     }
 
@@ -109,14 +109,26 @@
             '</div>';
     }
 
-    function renderFills(row) {
+    function setFillsPanel(message, showTable) {
         var body = $("builder-fills-body");
-        if (!body) return;
+        var table = document.querySelector(".builder-register");
+        var empty = $("builder-fills-empty");
+        if (table) table.hidden = !showTable;
+        if (empty) {
+            empty.hidden = !!showTable;
+            if (!showTable) empty.innerHTML = "<p>" + message + "</p>";
+        }
+        if (!empty && body && !showTable) {
+            body.innerHTML = '<tr><td colspan="7" class="empty-state">' + message + "</td></tr>";
+        }
+    }
+
+    function renderFills(row) {
         if (!row || !row.fills) {
-            body.innerHTML = '<tr><td colspan="7" class="empty-state">No attributed fills yet. This is a live zero from the fills table; execution may still be gated.</td></tr>';
+            setFillsPanel("No attributed fills yet. This is a live zero from the fills table; execution may still be gated.", false);
             return;
         }
-        body.innerHTML = '<tr><td colspan="7" class="empty-state">Attributed fills are summarized above; per-fill rows will appear here as the fills endpoint exposes operator-scoped records.</td></tr>';
+        setFillsPanel("Attributed fills are summarized above; per-fill rows will appear when operator-scoped records are exposed.", false);
     }
 
     async function boot() {
@@ -136,8 +148,7 @@
             renderSnapshot(row, detail);
             renderFills(row);
         } catch (e) {
-            var body = $("builder-fills-body");
-            if (body) body.innerHTML = '<tr><td colspan="7" class="empty-state">Could not load live builder attribution: ' + esc(e.message || e) + "</td></tr>";
+            setFillsPanel("Could not load live builder attribution: " + esc(e.message || e), false);
             var host = $("builder-volume-chart");
             if (host) host.innerHTML = '<div class="ak-live-panel"><p>Live builder attribution is temporarily unavailable.</p></div>';
         }

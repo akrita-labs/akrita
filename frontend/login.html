@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AKRITA — Keeper Login</title>
+    <link rel="icon" type="image/png" href="/static/assets/akrita-emblem.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body class="login-page">
+    <div class="parchment-overlay" aria-hidden="true"></div>
+
+    <main class="login-shell" aria-labelledby="login-title">
+        <section class="login-panel" aria-label="Keeper login">
+            <span class="login-corner login-corner-tl" aria-hidden="true">&#10048;</span>
+            <span class="login-corner login-corner-tr" aria-hidden="true">&#10048;</span>
+            <span class="login-corner login-corner-bl" aria-hidden="true">&#10048;</span>
+            <span class="login-corner login-corner-br" aria-hidden="true">&#10048;</span>
+
+            <div class="login-emblem-pane" aria-hidden="true">
+                <div class="login-emblem-ring">
+                    <img src="/static/assets/akrita-emblem.png" alt="" />
+                </div>
+            </div>
+
+            <div class="login-divider" aria-hidden="true">
+                <span></span>
+                <b>&#10016;</b>
+                <span></span>
+            </div>
+
+            <form class="login-form" id="keeper-login" action="/app/dashboard" method="get">
+                <a class="login-logo-link" href="/" aria-label="AKRITA home">
+                    <img src="/static/assets/akrita-emblem.png" alt="" aria-hidden="true" />
+                    <span>
+                        <strong id="login-title">AKRITA</strong>
+                        <small>AKRITAI</small>
+                    </span>
+                </a>
+
+                <div class="login-rule" aria-hidden="true">
+                    <span></span>
+                    <b>&#10016;</b>
+                    <span></span>
+                </div>
+
+                <div class="login-copy">
+                    <p>Welcome back, keeper.</p>
+                    <em>Enter your credentials to access the frontier.</em>
+                </div>
+
+                <label class="login-field">
+                    <span>Email</span>
+                    <span class="login-input-wrap">
+                        <input type="email" placeholder="keeper@domain.com" autocomplete="email" required />
+                        <i aria-hidden="true">&#9993;</i>
+                    </span>
+                </label>
+
+                <label class="login-field">
+                    <span>Password</span>
+                    <span class="login-input-wrap">
+                        <input type="password" placeholder="Enter your password" autocomplete="current-password" required />
+                        <i aria-hidden="true">&#9906;</i>
+                    </span>
+                </label>
+
+                <div class="login-options">
+                    <label>
+                        <input type="checkbox" />
+                        <span>Remember me</span>
+                    </label>
+                    <a href="/login#forgot-password">Forgot password?</a>
+                </div>
+
+                <button class="login-submit" type="submit">
+                    <span>Sign In</span>
+                    <i aria-hidden="true">&#10022;</i>
+                </button>
+
+                <div class="login-rule login-rule-lower" aria-hidden="true">
+                    <span></span>
+                    <b>&#10016;</b>
+                    <span></span>
+                </div>
+
+                <p class="login-alt-label">Or continue with</p>
+                <div class="login-alt-actions" aria-label="Alternative sign-in methods">
+                    <button type="button" data-login-next="/app/dashboard">
+                        <i aria-hidden="true">&#9960;</i>
+                        <span>Wallet Connect</span>
+                    </button>
+                    <button type="button" data-login-next="/app/dashboard">
+                        <i aria-hidden="true">&#9906;</i>
+                        <span>Passkey</span>
+                    </button>
+                </div>
+            </form>
+
+            <div class="login-frontier" aria-hidden="true">
+                <span class="login-tree login-tree-left"></span>
+                <span class="login-wall"></span>
+                <span class="login-tree login-tree-right"></span>
+            </div>
+        </section>
+
+        <p class="login-tagline">
+            <span aria-hidden="true">&#9826;</span>
+            Capital that farms when it is not fighting.
+        </p>
+    </main>
+
+    <script>
+        (function () {
+            var form = document.getElementById("keeper-login");
+            if (form) {
+                form.addEventListener("submit", function (event) {
+                    event.preventDefault();
+                    window.location.assign("/dashboard");
+                });
+            }
+
+            Array.prototype.forEach.call(document.querySelectorAll("[data-login-next]"), function (button) {
+                button.addEventListener("click", function () {
+                    window.location.assign(button.getAttribute("data-login-next"));
+                });
+            });
+        }());
+    </script>
+</body>
+</html>

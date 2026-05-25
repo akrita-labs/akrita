@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AKRITA — Agents</title>
+    <link rel="icon" type="image/png" href="/static/assets/akrita-emblem.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script defer src="/static/components.js"></script>
+</head>
+<body class="home-page" data-ak="glossary">
+    <div class="parchment-overlay" aria-hidden="true"></div>
+
+    <header class="home-header">
+        <a class="home-brand" href="/" aria-label="AKRITA home">
+            <img class="brand-emblem" src="/static/assets/akrita-emblem.png" alt="" aria-hidden="true" />
+            <span class="brand-wordmark">
+                <span class="home-brand-name">AKRITA</span>
+                <span class="home-brand-sub">autonomous rugpull oracle</span>
+            </span>
+        </a>
+
+        <nav class="home-nav" aria-label="Primary">
+            <a href="/">Overview</a>
+            <a href="/agents" class="is-active" aria-current="page">Agents</a>
+            <a href="/proof">Proof</a>
+            <a href="/about">About</a>
+            <a href="https://github.com/akrita-labs/akrita" target="_blank" rel="noopener">GitHub</a>
+        </nav>
+
+        <a class="home-enter" href="/login">Enter to the Keeper</a>
+    </header>
+
+    <main class="public-shell" data-glossify>
+        <section class="public-intro">
+            <p class="public-kicker">The Triumvirate</p>
+            <h1>Three signed agents, one frontier</h1>
+            <p>AKRITA runs as three autonomous keepers. Each proposes actions independently, each is gated by a deterministic Risk Agent, and each writes a verifiable reasoning trace before anything executes.</p>
+        </section>
+
+        <section class="home-triumvirate about-grid" aria-label="The three AKRITA agents">
+            <article>
+                <span>NOMOS — claim issuer</span>
+                <h2>Inscribes the claim</h2>
+                <p>Reads real on-chain rug signals — stablecoin freezes, token-security failures — and issues a signed rug-risk claim, writing the reasoning trace before it is anchored on Arc.</p>
+            </article>
+            <article>
+                <span>SPATHA — risk sentinel</span>
+                <h2>Contains exposure</h2>
+                <p>Stakes the two-sided bond market for or against each claim when the Risk Agent allows it, so the losing side is slashed on resolution.</p>
+            </article>
+            <article>
+                <span>AGROS — treasury agent</span>
+                <h2>Keeps idle capital working</h2>
+                <p>Parks idle bond collateral in USYC for treasury yield between resolutions — always preserving the audit trail.</p>
+            </article>
+        </section>
+    </main>
+
+    <footer class="home-footer">
+        <p>ARC TESTNET — <em>this is not financial advice</em></p>
+        <div class="footer-flourish" aria-hidden="true">
+            <span></span>
+            <b>✾</b>
+            <b>✾</b>
+            <b>✾</b>
+            <span></span>
+        </div>
+        <p>© 2026 AKRITA · Built for the Agora hackathon</p>
+    </footer>
+</body>
+</html>

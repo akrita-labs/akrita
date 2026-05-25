@@ -3,35 +3,35 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AKRITA AKRITAI — About</title>
+    <title>AKRITA — About</title>
+    <link rel="icon" type="image/png" href="/static/assets/akrita-emblem.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/static/styles.css" />
     <script defer src="/static/components.js"></script>
 </head>
-<body class="about-page" data-ak="nav,glossary,pills">
+<body class="about-page home-page" data-ak="glossary">
     <div class="parchment-overlay" aria-hidden="true"></div>
 
-    <header class="home-header builder-site-header">
+    <header class="home-header">
         <a class="home-brand" href="/" aria-label="AKRITA home">
-            <span class="home-brand-name">AKRITA</span>
-            <span class="home-brand-sub">AKRITAI</span>
+            <img class="brand-emblem" src="/static/assets/akrita-emblem.png" alt="" aria-hidden="true" />
+            <span class="brand-wordmark">
+                <span class="home-brand-name">AKRITA</span>
+                <span class="home-brand-sub">autonomous rugpull oracle</span>
+            </span>
         </a>
 
         <nav class="home-nav" aria-label="Primary">
-            <a href="/dashboard.html">Dashboard</a>
-            <span aria-hidden="true">·</span>
-            <a href="/trace.html">Trace Viewer</a>
-            <span aria-hidden="true">·</span>
-            <a href="/builder.html">Builder</a>
-            <span aria-hidden="true">·</span>
-            <a href="/about.html">About</a>
-            <span aria-hidden="true">·</span>
-            <a href="https://github.com/akrita-labs/akrita">Github</a>
+            <a href="/">Overview</a>
+            <a href="/agents">Agents</a>
+            <a href="/proof">Proof</a>
+            <a href="/about" class="is-active" aria-current="page">About</a>
+            <a href="https://github.com/akrita-labs/akrita" target="_blank" rel="noopener">GitHub</a>
         </nav>
 
-        <a class="home-enter" href="/dashboard.html">Enter Keeper</a>
+        <a class="home-enter" href="/login">Enter to the Keeper</a>
     </header>
 
     <main class="about-sheet" data-glossify>
@@ -40,7 +40,7 @@
             <div>
                 <p class="about-kicker">Arc testnet · Agora Agents Hackathon · 2026</p>
                 <h1>About AKRITA</h1>
-                <p>AKRITA is a frontier-keeper protocol: autonomous agents that keep margin productive until the instant it is needed, then anchor every decision as a verifiable trace.</p>
+                <p>AKRITA is a frontier-keeper protocol: autonomous agents that watch the chain for rug signals, inscribe each as a signed claim, and anchor every decision as a verifiable trace on Arc.</p>
             </div>
         </section>
 
@@ -48,17 +48,17 @@
             <article>
                 <span>NOMOS</span>
                 <h2>The law of the frontier</h2>
-                <p>Prices markets, weighs deterministic signals against context, and writes the quote decree.</p>
+                <p>Reads on-chain rug signals, weighs them against context, and inscribes the signed rug-risk claim.</p>
             </article>
             <article>
                 <span>SPATHA</span>
                 <h2>The cut at the boundary</h2>
-                <p>Contains exposure, hedges inventory, and keeps risk gates from becoming ornament.</p>
+                <p>Stakes the bond market for or against each claim, and keeps risk gates from becoming ornament.</p>
             </article>
             <article>
                 <span>AGROS</span>
                 <h2>The field that yields</h2>
-                <p>Moves idle capital between operating liquidity and USYC so treasury time is not wasted.</p>
+                <p>Moves idle bond collateral between operating liquidity and USYC so treasury time is not wasted.</p>
             </article>
         </section>
 
@@ -79,9 +79,9 @@
             <span></span><b>✾</b><b>✾</b><b>✾</b><span></span>
         </div>
         <nav aria-label="About footer links">
-            <a href="/dashboard.html">Dashboard</a>
-            <a href="/trace.html">Trace Viewer</a>
-            <a href="/builder.html">Builder Profile</a>
+            <a href="/app/dashboard">Dashboard</a>
+            <a href="/app/trace">Trace Viewer</a>
+            <a href="/app/builder">Builder Profile</a>
         </nav>
     </footer>
 </body>

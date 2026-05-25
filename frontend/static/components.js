@@ -6,28 +6,32 @@
 
     var GLOSSARY = {
         NOMOS: {
-            plain: "Market Maker",
-            def: "The pricing agent that posts and updates Polymarket quotes.",
+            plain: "Claim Issuer",
+            def: "The signing agent that reads on-chain rug signals — stablecoin freezes, token-security failures — and issues a verifiable rug-risk claim.",
         },
         SPATHA: {
-            plain: "Hedger",
-            def: "The risk agent that offsets inventory when exposure gets too large.",
+            plain: "Risk Sentinel",
+            def: "The risk agent that stakes the bond market for or against a claim, containing exposure at the boundary.",
         },
         AGROS: {
             plain: "Treasury",
-            def: "The treasury agent that keeps idle collateral productive between trades.",
+            def: "The treasury agent that keeps idle bond collateral productive between resolutions.",
         },
         AKRITAI: {
             plain: "Frontier Keepers",
-            def: "The three-agent AKRITA system: market making, hedging, and treasury.",
+            def: "The three-agent AKRITA system: rug-risk claims, bond settlement, and treasury.",
         },
         USYC: {
             plain: "Tokenized Treasury Yield",
             def: "The yield-bearing asset used by AGROS for idle treasury capital.",
         },
+        ClaimRegistry: {
+            plain: "On-chain Claim Registry",
+            def: "The Arc contract that records signed rug-risk claims and their two-sided USDC bond pools.",
+        },
         pUSD: {
             plain: "Operating Margin",
-            def: "The margin asset needed before execution can leave the sandbox gate.",
+            def: "The margin asset needed before the gated keeper execution path can leave the sandbox gate.",
         },
         STRATIOTIS: {
             plain: "Essentials Mode",
@@ -51,35 +55,26 @@
         },
     };
 
+    // Dashboard / Keeper app navigation. The public homepage header is authored
+    // statically in index.html and is intentionally NOT driven by this array.
     var NAV = [
-        { label: "Dashboard", href: "/dashboard", group: "Operation" },
-        { label: "Leaderboard", href: "/leaderboard", group: "Ecosystem" },
-        { label: "Personalize", href: "/personalize", group: "Operation" },
-        { label: "Builder", href: "/builder", group: "Ecosystem" },
-        { label: "Trace Viewer", href: "/trace", group: "Trust Layer" },
-        { label: "About", href: "/about", group: "Discovery" },
-        {
-            label: "Docs",
-            href: "https://github.com/akrita-labs/akrita/blob/main/docs/ARCHITECTURE.md",
-            group: "Trust Layer",
-            external: true,
-        },
-        {
-            label: "GitHub",
-            href: "https://github.com/akrita-labs/akrita",
-            group: "Discovery",
-            external: true,
-        },
+        { label: "Oracle", href: "/app/oracle", group: "Trust Layer" },
+        { label: "Keeper Overview", href: "/app/dashboard", group: "Operation" },
+        { label: "Traces", href: "/app/trace", group: "Trust Layer" },
+        { label: "Operators", href: "/app/leaderboard", group: "Ecosystem" },
+        { label: "Builder Profile", href: "/app/builder", group: "Ecosystem" },
+        { label: "Strategy", href: "/app/personalize", group: "Operation" },
     ];
 
     var PAGE_CONTEXT = {
-        "/dashboard": "Operation Console",
-        "/leaderboard": "Ecosystem Board",
-        "/personalize": "Configuration Sandbox",
-        "/builder": "Builder Attribution",
-        "/trace": "Trust Layer",
+        "/app/oracle": "Rugpull Oracle",
+        "/app/dashboard": "Operation Console",
+        "/app/leaderboard": "Ecosystem Board",
+        "/app/personalize": "Configuration Sandbox",
+        "/app/builder": "Builder Attribution",
+        "/app/trace": "Trust Layer",
         "/about": "System Map",
-        "/akritai": "Operator Profile",
+        "/app/akritai": "Operator Profile",
     };
 
     function esc(s) {
@@ -225,8 +220,8 @@
     function normalizedPath() {
         var path = window.location.pathname.replace(/\/+$/, "") || "/";
         path = path.replace(/\.html$/, "");
-        if (path.indexOf("/trace/") === 0) return "/trace";
-        if (path.indexOf("/akritai/") === 0) return "/akritai";
+        if (path.indexOf("/app/trace/") === 0) return "/app/trace";
+        if (path.indexOf("/app/akritai/") === 0) return "/app/akritai";
         return path;
     }
 
@@ -234,21 +229,15 @@
         if (item.external) return false;
         var here = normalizedPath();
         var itemPath = item.href.replace(/\/+$/, "") || "/";
-        if (itemPath === "/trace" && here === "/trace") return true;
-        if (itemPath === "/personalize" && here === "/personalize") return true;
+        if (itemPath === "/app/trace" && here === "/app/trace") return true;
+        if (itemPath === "/app/personalize" && here === "/app/personalize") return true;
         return here === itemPath;
     }
 
     function renderNav(nav) {
-        var isHomeNav = nav.classList.contains("home-nav");
         nav.innerHTML = "";
-        NAV.forEach(function (item, i) {
-            if (isHomeNav && i > 0) {
-                var sep = document.createElement("span");
-                sep.setAttribute("aria-hidden", "true");
-                sep.textContent = ".";
-                nav.appendChild(sep);
-            }
+        NAV.forEach(function (item) {
+            // No decorative dot separators — spacing alone divides nav items.
             var a = document.createElement("a");
             a.href = item.href;
             a.textContent = item.label;
@@ -273,62 +262,44 @@
         } catch (e) {}
     }
 
-    function shortUser(userId) {
-        if (!userId) return "";
-        if (userId === SANDBOX_USER) return "sandbox";
-        return userId.length > 14 ? userId.slice(0, 6) + "..." + userId.slice(-4) : userId;
-    }
-
-    function walletButton() {
-        var btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "ak-wallet-button";
-
-        function refresh() {
-            var userId = getUser();
-            btn.textContent = userId ? "Wallet: " + shortUser(userId) : "Connect Wallet (sandbox)";
-            btn.setAttribute("aria-label", userId
-                ? "Sandbox wallet connected as " + shortUser(userId)
-                : "Connect sandbox wallet");
+    // Wallet connection is requested only when a state-changing action needs an
+    // operator identity (save strategy, register builder, fund keeper, edit risk
+    // parameters, copy config). There is intentionally no persistent "connect"
+    // button in the page chrome. Returns the resolved user id.
+    function connectWallet(opts) {
+        opts = opts || {};
+        var userId = getUser();
+        if (!userId) {
+            userId = opts.userId || SANDBOX_USER;
+            setUser(userId);
         }
-
-        btn.addEventListener("click", function () {
-            if (!getUser()) {
-                setUser(SANDBOX_USER);
-                window.dispatchEvent(new CustomEvent("akrita:user", { detail: { user_id: SANDBOX_USER } }));
-                refresh();
-                if (normalizedPath() === "/personalize") window.location.reload();
-                return;
-            }
-            window.dispatchEvent(new CustomEvent("akrita:user", { detail: { user_id: getUser() } }));
-        });
-        refresh();
-        return btn;
+        window.dispatchEvent(new CustomEvent("akrita:user", { detail: { user_id: userId } }));
+        return userId;
     }
 
     function mountNav() {
         Array.prototype.forEach.call(document.querySelectorAll(".home-nav, .dashboard-nav"), renderNav);
 
-        var status = pill("live", {
-            label: "LIVE (testnet)",
-            tooltip: "Decisions, traces and risk verdicts are live on Arc testnet. Execution may be gated.",
-        });
-        var actions = document.createElement("div");
-        actions.className = "ak-nav-actions";
-        actions.appendChild(status);
-        actions.appendChild(walletButton());
-
+        // Status badge only — no wallet button. Wallet is requested on action.
         var dashSlot = document.querySelector(".dashboard-live");
         if (dashSlot) {
             dashSlot.innerHTML = "";
-            dashSlot.appendChild(status);
-            dashSlot.appendChild(walletButton());
+            dashSlot.appendChild(pill("live", {
+                label: "Live: Arc Testnet",
+                tooltip: "Decisions, traces and risk verdicts are live on Arc testnet. Execution may be gated.",
+            }));
             dashSlot.classList.add("ak-nav-actions");
             return;
         }
 
         var enter = document.querySelector(".home-enter");
         if (enter && enter.parentNode) {
+            var actions = document.createElement("div");
+            actions.className = "ak-nav-actions";
+            actions.appendChild(pill("live", {
+                label: "Live: Arc Testnet",
+                tooltip: "Decisions, traces and risk verdicts are live on Arc testnet. Execution may be gated.",
+            }));
             enter.parentNode.replaceChild(actions, enter);
         }
     }
@@ -408,8 +379,9 @@
         if (featureEnabled("nav")) mountNav();
         if (featureEnabled("pills")) mountContextStrip();
         if (featureEnabled("glossary")) {
+            // Inline term tooltips only — the floating "Glossary of the Empire"
+            // drawer button was removed to reduce chrome clutter.
             glossifyAll(document.querySelector("main") || document.body);
-            mountGlossaryDrawer();
         }
     }
 
@@ -424,6 +396,9 @@
         mountContextStrip: mountContextStrip,
         mountGlossaryDrawer: mountGlossaryDrawer,
         sandboxUser: SANDBOX_USER,
+        connectWallet: connectWallet,
+        requireWallet: connectWallet,
+        getUser: getUser,
     };
 
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);

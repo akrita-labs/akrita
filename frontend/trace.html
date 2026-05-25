@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AKRITA AKRITAI — Trace</title>
+    <title>AKRITA — Trace</title>
+    <link rel="icon" type="image/png" href="/static/assets/akrita-emblem.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -16,13 +17,16 @@
 
     <header class="dashboard-header">
         <a class="dashboard-brand" href="/" aria-label="AKRITA home">
-            <span class="dashboard-brand-name">AKRITA</span>
-            <span class="dashboard-brand-sub">AKRITAI</span>
+            <img class="brand-emblem" src="/static/assets/akrita-emblem.png" alt="" aria-hidden="true" />
+            <span class="brand-wordmark">
+                <span class="dashboard-brand-name">AKRITA</span>
+                <span class="dashboard-brand-sub">AKRITAI</span>
+            </span>
         </a>
 
         <div class="dashboard-network">
             <span class="network-cross" aria-hidden="true">✠</span>
-            <span>Arc testnet · block <b>#1,847,293</b></span>
+            <span>Arc testnet · trace registry</span>
         </div>
 
         <div class="dashboard-live">
@@ -32,11 +36,11 @@
     </header>
 
     <nav class="dashboard-nav" aria-label="Primary">
-        <a href="/dashboard">Dashboard</a>
-        <a href="/leaderboard">Leaderboard</a>
-        <a href="/personalize">Personalize</a>
-        <a href="/builder">Builder</a>
-        <a href="/trace" class="is-active">Trace Viewer</a>
+        <a href="/app/dashboard">Dashboard</a>
+        <a href="/app/leaderboard">Leaderboard</a>
+        <a href="/app/personalize">Personalize</a>
+        <a href="/app/builder">Builder</a>
+        <a href="/app/trace" class="is-active">Trace Viewer</a>
         <a href="/about">About</a>
     </nav>
 
@@ -47,9 +51,9 @@
         <span class="trace-corner corner-br" aria-hidden="true">✾</span>
 
         <aside class="trace-marginalia" aria-label="Trace margin notes">
-            <p><span>→</span> market is<br />high-volume,<br />FOMC week</p>
-            <p><span>→</span> implied<br />probability vs<br />deterministic<br />mid</p>
-            <p><span>→</span> news<br />sentiment<br />ingest,<br />3 sources</p>
+            <p><span>→</span> on-chain<br />rug signal,<br />read at source</p>
+            <p><span>→</span> reasoning<br />hashed to<br />canonical<br />JSON</p>
+            <p><span>→</span> pinned to<br />IPFS,<br />anchored<br />on Arc</p>
         </aside>
 
         <aside class="trace-stamps" aria-label="Trace status">
@@ -146,7 +150,7 @@
             <b>✾</b>
             <span></span>
         </div>
-        <a class="trace-verify-button" href="/trace.html">Verify Integrity →</a>
+        <a class="trace-verify-button" href="/app/trace">Verify Integrity →</a>
     </footer>
 </body>
 </html>

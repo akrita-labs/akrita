@@ -72,7 +72,7 @@
 
         var svg =
             '<svg viewBox="0 0 ' + W + " " + H + '" width="100%" role="img" ' +
-            'aria-label="Polymarket scoring curve, score ' + sVal.toFixed(2) +
+            'aria-label="Maker scoring curve, score ' + sVal.toFixed(2) +
             ' at offset ' + offset.toFixed(2) + '" ' +
             'style="display:block;font-family:var(--font-mono),monospace;">' +
             // axes

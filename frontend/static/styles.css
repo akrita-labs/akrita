@@ -513,6 +513,31 @@ body.home-page {
     flex-direction: column;
 }
 
+/* The homepage is a single locked viewport — no scrolling. Scoped to the
+   landing only: Agents / Proof / About also carry .home-page but must scroll. */
+body.home-landing {
+    height: 100vh;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.home-landing .home-shell {
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Compact the hero on the locked homepage so the full column (title +
+   paragraph + actions) fits one screen — no clipping, no footer overlap. */
+.home-landing .home-header { padding-top: 12px; padding-bottom: 10px; min-height: 0; }
+.home-landing .hero-copy { padding: 4px 0 4px; }
+.home-landing .home-kicker { margin-bottom: 10px; }
+.home-landing .home-title { grid-template-columns: 200px minmax(360px, 1fr); }
+.home-landing .illuminated-initial { width: 200px; height: 202px; }
+.home-landing .title-lines { font-size: 58px; margin-top: 4px; }
+.home-landing .hero-text { margin-top: 20px; margin-bottom: 14px; font-size: 20px; line-height: 1.38; }
+.home-landing .home-divider { margin-top: 14px; margin-bottom: 16px; }
+.home-landing .home-footer { padding-top: 12px; padding-bottom: 14px; }
+
 .home-page .parchment-overlay {
     background:
         repeating-linear-gradient(
@@ -539,10 +564,30 @@ body.home-page {
 
 .home-brand {
     display: inline-flex;
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
     color: var(--home-ink);
     text-decoration: none;
+}
+
+/* Mosaic medallion logo — shared across the home + dashboard headers.
+   The square source art is cropped into a clean circular emblem via CSS
+   (border-radius) and ringed in gold, so no destructive image edit is needed. */
+.brand-wordmark {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.brand-emblem {
+    flex: none;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: contain;
+    /* the medallion carries its own gold ring; just add soft depth */
+    box-shadow: 0 1px 4px rgba(26, 34, 56, 0.22);
 }
 
 .home-brand-name {
@@ -589,6 +634,88 @@ body.home-page {
     color: var(--home-gold);
 }
 
+/* ---- Public marketing pages (home / Agents / Proof) ------------------ */
+
+/* Nav: elegant hairline dividers between items (no dot punctuation),
+   padded button-like hit areas, with a clear active state inherited from
+   the shared .home-nav a.is-active rule. */
+.home-page .home-nav {
+    gap: 0;
+}
+
+.home-page .home-nav a {
+    position: relative;
+    padding: 5px 22px;
+    transition: color 0.15s ease;
+}
+
+.home-page .home-nav a:first-child {
+    padding-left: 2px;
+}
+
+.home-page .home-nav a + a::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 16px;
+    background: linear-gradient(180deg, transparent, var(--home-gold), transparent);
+    opacity: 0.6;
+}
+
+@media (max-width: 900px) {
+    .home-page .home-nav { gap: 6px 14px; }
+    .home-page .home-nav a { padding: 4px 2px; }
+    .home-page .home-nav a + a::before { display: none; }
+}
+
+/* Centered content layout for the standalone Agents / Proof pages. */
+.public-shell {
+    flex: 1;
+    width: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 44px 58px 32px;
+}
+
+.public-intro {
+    text-align: center;
+    max-width: 70ch;
+    margin: 0 auto 6px;
+}
+
+.public-kicker {
+    margin: 0 0 12px;
+    color: var(--home-gold);
+    font-family: var(--font-display);
+    font-size: 18px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.public-intro h1 {
+    margin: 0 0 14px;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(2rem, 4vw, 3rem);
+    line-height: 1.05;
+    letter-spacing: 0.03em;
+    color: var(--home-ink);
+}
+
+.public-intro p {
+    margin: 0 auto;
+    font-size: 18px;
+    line-height: 1.45;
+    color: var(--ink-soft);
+}
+
+@media (max-width: 900px) {
+    .public-shell { padding: 30px 24px 24px; }
+}
+
 .home-enter,
 .hero-button {
     display: inline-flex;
@@ -615,6 +742,28 @@ body.home-page {
 .home-enter:hover,
 .hero-button-primary:hover {
     background: #835913;
+}
+
+/* Home (root) header — simplified: brand + ABOUT · DOCUMENTATION on the left,
+   one prominent "Enter to the Keeper" button pinned right. Scoped to .home-page
+   and to >=901px so the existing mobile stacking rules are left untouched. */
+@media (min-width: 901px) {
+    .home-page .home-header {
+        grid-template-columns: auto 1fr auto;
+    }
+
+    .home-page .home-nav {
+        justify-content: flex-start;
+        gap: 0;
+        margin-left: 12px;
+    }
+
+    .home-page .home-enter {
+        min-height: 62px;
+        padding: 0 48px;
+        font-size: 20px;
+        letter-spacing: 0.12em;
+    }
 }
 
 .home-shell {
@@ -665,15 +814,18 @@ body.home-page {
     justify-content: center;
     overflow: hidden;
     border: 5px double var(--home-gold-soft);
-    color: var(--home-crimson);
-    font-size: 226px;
-    line-height: 0.72;
-    font-weight: 700;
-    background:
-        radial-gradient(circle at 50% 50%, transparent 0 30%, rgba(160, 116, 39, 0.11) 31% 32%, transparent 33%),
-        repeating-radial-gradient(circle at 50% 48%, rgba(157, 115, 37, 0.22) 0 1px, transparent 1px 16px),
-        linear-gradient(135deg, rgba(255, 247, 224, 0.88), rgba(227, 205, 157, 0.46));
-    box-shadow: inset 0 0 0 8px rgba(255, 247, 224, 0.84);
+    /* warm, opaque parchment fill behind the letter's filigree gaps */
+    background: linear-gradient(135deg, #f3ead2, #e6d6b0);
+}
+
+/* Illuminated drop-cap image — background cut to transparent and trimmed tight.
+   `contain` keeps the whole letter (no clipping); `padding` is the single knob for
+   how much breathing room sits between the C and the gold frame. */
+.illuminated-initial img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 5%;
 }
 
 .illuminated-initial::before,
@@ -751,7 +903,7 @@ body.home-page {
 }
 
 .hero-button-primary {
-    width: 260px;
+    width: 300px;
     background: linear-gradient(180deg, #a77724, #916318);
     color: #fff7e7;
 }
@@ -778,25 +930,7 @@ body.home-page {
     overflow: hidden;
 }
 
-.keeper-plate::before,
-.keeper-plate::after {
-    content: "";
-    position: absolute;
-    pointer-events: none;
-    border-color: rgba(139, 98, 32, 0.4);
-}
-
-.keeper-plate::before {
-    inset: 28px 18px;
-    border-top: 1px solid;
-    border-bottom: 1px solid;
-}
-
-.keeper-plate::after {
-    inset: 18px 28px;
-    border-left: 1px solid;
-    border-right: 1px solid;
-}
+/* inner dark rule removed — the main (outer) border is now the only frame */
 
 .plate-flower {
     position: absolute;
@@ -809,23 +943,24 @@ body.home-page {
     color: var(--home-gold);
     font-size: 26px;
     line-height: 1;
-    background: #efe3ca;
+    background: transparent;
+    text-shadow: 0 0 4px rgba(245, 238, 221, 0.95), 0 1px 1px rgba(245, 238, 221, 0.9);
 }
 
-.plate-flower-tl { top: 18px; left: 18px; }
-.plate-flower-tr { top: 18px; right: 18px; }
-.plate-flower-bl { bottom: 38px; left: 18px; }
-.plate-flower-br { bottom: 38px; right: 18px; }
+/* flowers now sit at the corners of the main (outer) border */
+.plate-flower-tl { top: 9px; left: 9px; }
+.plate-flower-tr { top: 9px; right: 9px; }
+.plate-flower-bl { bottom: 9px; left: 9px; }
+.plate-flower-br { bottom: 9px; right: 9px; }
 
 .keeper-figure {
     position: absolute;
-    left: -9%;
-    right: -9%;
-    bottom: 40px;
-    width: 118%;
-    height: auto;
-    max-height: calc(100% - 60px);
-    object-fit: contain;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: calc(100% - 42px);
+    object-fit: cover;
+    object-position: center center;
     mix-blend-mode: multiply;
     filter: sepia(0.12) contrast(0.98) saturate(0.92);
 }
@@ -862,59 +997,59 @@ body.home-page {
 }
 
 .label-akrites {
-    top: 72px;
-    right: 14%;
+    top: 66px;
+    right: 13%;
 }
 
 .label-akrites::after {
-    width: 92px;
-    left: -102px;
+    width: 104px;
+    left: -114px;
     top: 12px;
-    transform: rotate(-27deg);
+    transform: rotate(-25deg);
 }
 
 .label-agros {
-    top: 250px;
-    left: 9%;
+    top: 188px;
+    left: 8%;
     text-align: right;
 }
 
 .label-agros::after {
-    width: 78px;
-    right: -86px;
-    top: 16px;
-    transform: rotate(65deg);
+    width: 126px;
+    right: -136px;
+    top: 18px;
+    transform: rotate(58deg);
 }
 
 .label-nomos {
-    left: 19%;
-    bottom: 250px;
+    left: 17%;
+    top: 312px;
 }
 
 .label-nomos::after {
-    width: 70px;
-    right: -78px;
-    top: 5px;
-    transform: rotate(-11deg);
+    width: 96px;
+    right: -106px;
+    top: 9px;
+    transform: rotate(-6deg);
 }
 
 .label-spatha {
-    top: 262px;
+    top: 232px;
     right: 8%;
 }
 
 .label-spatha::after {
-    width: 98px;
-    left: -108px;
+    width: 104px;
+    left: -114px;
     top: 10px;
-    transform: rotate(-32deg);
+    transform: rotate(-30deg);
 }
 
 .plate-caption {
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 17px;
+    bottom: 13px;
     margin: 0;
     color: #5f482b;
     font-family: var(--font-body);
@@ -1038,9 +1173,12 @@ body.home-page {
     }
 
     .keeper-figure {
-        left: -7%;
-        width: 114%;
-        bottom: 44px;
+        inset: auto 0 16px 0;
+        width: 100%;
+        height: auto;
+        max-height: calc(100% - 28px);
+        object-fit: contain;
+        object-position: center bottom;
     }
 
     .figure-label {
@@ -1077,6 +1215,11 @@ body.home-page {
 
     .home-brand-name {
         font-size: 29px;
+    }
+
+    .brand-emblem {
+        width: 40px;
+        height: 40px;
     }
 
     .home-nav {
@@ -1138,8 +1281,12 @@ body.home-page {
     }
 
     .keeper-figure {
-        left: -28%;
-        width: 156%;
+        inset: auto 0 12px 0;
+        width: 100%;
+        height: auto;
+        max-height: calc(100% - 22px);
+        object-fit: contain;
+        object-position: center bottom;
     }
 
     .label-agros,
@@ -1155,6 +1302,653 @@ body.home-page {
     .label-spatha {
         top: 190px;
         right: 7%;
+    }
+}
+
+/* ===== Keeper login ====================================================== */
+
+.login-page {
+    /* Single locked viewport — no scrolling. */
+    height: 100vh;
+    overflow: hidden;
+    background:
+        linear-gradient(180deg, rgba(245, 238, 221, 0.62), rgba(236, 227, 207, 0.9)),
+        var(--parchment);
+    color: var(--ink);
+}
+
+.login-shell {
+    height: 100vh;
+    min-height: 0;
+    width: 100%;
+    padding: 26px 32px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+}
+
+.login-panel {
+    position: relative;
+    width: min(1270px, 100%);
+    min-height: 0;
+    padding: 34px 62px 88px;
+    display: grid;
+    grid-template-columns: minmax(360px, 1fr) 76px minmax(430px, 0.92fr);
+    align-items: stretch;
+    border: 2px solid rgba(122, 93, 31, 0.76);
+    background:
+        linear-gradient(135deg, rgba(255, 250, 238, 0.72), rgba(238, 225, 195, 0.46)),
+        repeating-linear-gradient(
+            90deg,
+            rgba(122, 93, 31, 0.025) 0,
+            rgba(122, 93, 31, 0.025) 1px,
+            transparent 1px,
+            transparent 7px
+        ),
+        var(--vellum);
+    box-shadow: 0 18px 40px rgba(55, 39, 20, 0.2), inset 0 0 0 8px rgba(176, 138, 60, 0.1);
+    overflow: hidden;
+}
+
+.login-panel::before {
+    content: "";
+    position: absolute;
+    inset: 9px;
+    border: 1px solid rgba(122, 93, 31, 0.52);
+    pointer-events: none;
+    z-index: 2;
+}
+
+.login-panel::after {
+    content: "";
+    position: absolute;
+    inset: 18px;
+    border: 1px solid rgba(176, 138, 60, 0.22);
+    pointer-events: none;
+    z-index: 2;
+}
+
+.login-corner {
+    position: absolute;
+    z-index: 3;
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    color: var(--gold-deep);
+    font-family: var(--font-display);
+    font-size: 28px;
+    line-height: 1;
+    text-shadow: 0 1px rgba(255, 250, 238, 0.9);
+}
+
+.login-corner-tl { top: 15px; left: 15px; }
+.login-corner-tr { top: 15px; right: 15px; }
+.login-corner-bl { bottom: 15px; left: 15px; }
+.login-corner-br { bottom: 15px; right: 15px; }
+
+.login-emblem-pane,
+.login-form,
+.login-divider {
+    position: relative;
+    z-index: 4;
+}
+
+.login-emblem-pane {
+    min-height: 460px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 0 34px;
+}
+
+.login-emblem-ring {
+    width: 430px;
+    max-width: 88%;
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle, rgba(255, 252, 242, 0.86) 0 58%, rgba(26, 34, 56, 0.08) 59% 100%);
+    box-shadow: 0 18px 32px rgba(26, 34, 56, 0.18), 0 0 0 1px rgba(122, 93, 31, 0.24);
+}
+
+.login-emblem-ring img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 10px rgba(26, 34, 56, 0.14));
+}
+
+.login-divider {
+    align-self: stretch;
+    display: grid;
+    grid-template-rows: 1fr auto 1fr;
+    justify-items: center;
+    color: var(--gold-deep);
+}
+
+.login-divider span {
+    width: 1px;
+    background: linear-gradient(180deg, transparent, rgba(122, 93, 31, 0.62), transparent);
+}
+
+.login-divider b {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 44px;
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.login-form {
+    width: min(100%, 520px);
+    align-self: center;
+    justify-self: center;
+    padding-bottom: 26px;
+}
+
+.login-logo-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    color: var(--ink);
+    text-align: center;
+    text-decoration: none;
+}
+
+.login-logo-link img {
+    width: 58px;
+    height: 58px;
+    flex: none;
+    object-fit: contain;
+    border-radius: 50%;
+    box-shadow: 0 1px 4px rgba(26, 34, 56, 0.18);
+}
+
+.login-logo-link strong {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 64px;
+    font-weight: 500;
+    line-height: 0.9;
+    letter-spacing: 0.22em;
+}
+
+.login-logo-link small {
+    display: block;
+    margin-top: 14px;
+    color: var(--gold-deep);
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0.28em;
+}
+
+.login-rule {
+    margin: 24px 0 20px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 14px;
+    color: var(--gold-deep);
+}
+
+.login-rule span {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(122, 93, 31, 0.64));
+}
+
+.login-rule span:last-child {
+    background: linear-gradient(90deg, rgba(122, 93, 31, 0.64), transparent);
+}
+
+.login-rule b {
+    font-family: var(--font-display);
+    font-size: 23px;
+    line-height: 1;
+}
+
+.login-copy {
+    margin-bottom: 23px;
+    text-align: center;
+}
+
+.login-copy p {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 25px;
+    font-weight: 600;
+    line-height: 1.15;
+}
+
+.login-copy em {
+    display: block;
+    margin-top: 5px;
+    color: #302a25;
+    font-size: 17px;
+    line-height: 1.35;
+}
+
+.login-field {
+    display: block;
+    margin-top: 19px;
+}
+
+.login-field > span:first-child {
+    display: block;
+    margin-bottom: 7px;
+    color: var(--gold-deep);
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.login-input-wrap {
+    position: relative;
+    display: block;
+}
+
+.login-input-wrap input {
+    width: 100%;
+    min-height: 50px;
+    padding: 0 48px 0 18px;
+    border: 1px solid rgba(122, 93, 31, 0.56);
+    border-radius: var(--rad-sm);
+    background: rgba(255, 250, 238, 0.42);
+    color: var(--ink);
+    font: 18px/1 var(--font-body);
+    box-shadow: inset 0 1px 2px rgba(55, 39, 20, 0.08);
+}
+
+.login-input-wrap input::placeholder {
+    color: rgba(74, 82, 106, 0.75);
+}
+
+.login-input-wrap input:focus {
+    outline: 2px solid rgba(176, 138, 60, 0.34);
+    outline-offset: 2px;
+    border-color: var(--gold-deep);
+}
+
+.login-input-wrap i {
+    position: absolute;
+    top: 50%;
+    right: 16px;
+    transform: translateY(-50%);
+    color: var(--gold-deep);
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-style: normal;
+    line-height: 1;
+}
+
+.login-options {
+    margin: 17px 0 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    color: #302a25;
+    font-size: 17px;
+}
+
+.login-options label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.login-options input {
+    width: 21px;
+    height: 21px;
+    margin: 0;
+    accent-color: var(--gold-deep);
+}
+
+.login-options a {
+    color: var(--gold-deep);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    white-space: nowrap;
+}
+
+.login-submit,
+.login-alt-actions button {
+    border: 1px solid rgba(122, 93, 31, 0.72);
+    border-radius: var(--rad-sm);
+    font-family: var(--font-display);
+    font-weight: 600;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.login-submit {
+    width: 100%;
+    min-height: 56px;
+    padding: 0 18px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    background: linear-gradient(180deg, #b9862c, #9b6a19);
+    color: #fff7e7;
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.2), 0 8px 16px rgba(122, 93, 31, 0.16);
+    font-size: 22px;
+    letter-spacing: 0.08em;
+}
+
+.login-submit:hover,
+.login-submit:focus-visible {
+    background: linear-gradient(180deg, #a97823, #835913);
+}
+
+.login-submit i {
+    font-style: normal;
+    font-size: 23px;
+    line-height: 1;
+}
+
+.login-rule-lower {
+    margin-top: 25px;
+    margin-bottom: 12px;
+}
+
+.login-alt-label {
+    margin: 0 0 12px;
+    color: var(--gold-deep);
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.login-alt-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.login-alt-actions button {
+    min-height: 56px;
+    padding: 0 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 11px;
+    background: rgba(255, 250, 238, 0.38);
+    color: var(--ink);
+    font-size: 17px;
+    letter-spacing: 0.06em;
+}
+
+.login-alt-actions button:hover,
+.login-alt-actions button:focus-visible {
+    background: rgba(176, 138, 60, 0.13);
+}
+
+.login-alt-actions i {
+    color: var(--gold-deep);
+    font-style: normal;
+    font-size: 22px;
+    line-height: 1;
+}
+
+.login-frontier {
+    position: absolute;
+    z-index: 3;
+    left: 74px;
+    right: 74px;
+    bottom: 18px;
+    height: 60px;
+    display: flex;
+    align-items: flex-end;
+    gap: 22px;
+    color: rgba(74, 57, 24, 0.74);
+    pointer-events: none;
+}
+
+.login-wall {
+    position: relative;
+    flex: 1;
+    height: 54px;
+    border-bottom: 2px solid currentColor;
+    background:
+        repeating-linear-gradient(90deg, transparent 0 42px, currentColor 42px 43px, transparent 43px 64px),
+        linear-gradient(180deg, transparent 0 23px, currentColor 23px 25px, transparent 25px);
+    opacity: 0.72;
+}
+
+.login-wall::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 10px;
+    height: 10px;
+    background: repeating-linear-gradient(90deg, currentColor 0 22px, transparent 22px 34px);
+}
+
+.login-wall::after {
+    content: "";
+    position: absolute;
+    left: 9%;
+    bottom: 0;
+    width: 30px;
+    height: 46px;
+    border: 2px solid currentColor;
+    border-bottom: 0;
+    box-shadow:
+        260px 12px 0 -2px transparent,
+        260px 12px 0 0 currentColor,
+        520px -2px 0 -2px transparent,
+        520px -2px 0 0 currentColor,
+        760px 9px 0 -2px transparent,
+        760px 9px 0 0 currentColor;
+}
+
+.login-tree {
+    position: relative;
+    width: 52px;
+    height: 70px;
+    flex: none;
+    border-bottom: 2px solid currentColor;
+    opacity: 0.68;
+}
+
+.login-tree::before,
+.login-tree::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    transform-origin: bottom center;
+    background: currentColor;
+}
+
+.login-tree::before {
+    width: 2px;
+    height: 64px;
+}
+
+.login-tree::after {
+    width: 44px;
+    height: 44px;
+    bottom: 20px;
+    background:
+        linear-gradient(28deg, transparent 0 44%, currentColor 45% 49%, transparent 50%),
+        linear-gradient(-28deg, transparent 0 44%, currentColor 45% 49%, transparent 50%),
+        linear-gradient(70deg, transparent 0 45%, currentColor 46% 50%, transparent 51%),
+        linear-gradient(-70deg, transparent 0 45%, currentColor 46% 50%, transparent 51%);
+    transform: translateX(-50%);
+}
+
+.login-tagline {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 13px;
+    color: #302a25;
+    font-size: 22px;
+    line-height: 1.2;
+    text-align: center;
+}
+
+.login-tagline span {
+    color: var(--gold-deep);
+    font-size: 26px;
+}
+
+@media (max-width: 1080px) {
+    .login-shell {
+        justify-content: flex-start;
+        padding: 28px 22px;
+    }
+
+    .login-panel {
+        min-height: auto;
+        padding: 38px 28px 110px;
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .login-emblem-pane {
+        min-height: auto;
+        padding: 10px 0 0;
+    }
+
+    .login-emblem-ring {
+        width: 250px;
+    }
+
+    .login-divider {
+        height: 46px;
+        grid-template-rows: none;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+    }
+
+    .login-divider span {
+        width: 100%;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(122, 93, 31, 0.62), transparent);
+    }
+
+    .login-form {
+        padding-bottom: 0;
+    }
+
+    .login-frontier {
+        left: 34px;
+        right: 34px;
+        bottom: 22px;
+    }
+}
+
+@media (max-width: 620px) {
+    .login-shell {
+        padding: 16px 12px 24px;
+    }
+
+    .login-panel {
+        padding: 30px 18px 92px;
+    }
+
+    .login-corner {
+        font-size: 23px;
+    }
+
+    .login-emblem-ring {
+        width: 186px;
+    }
+
+    .login-logo-link {
+        gap: 11px;
+    }
+
+    .login-logo-link img {
+        width: 44px;
+        height: 44px;
+    }
+
+    .login-logo-link strong {
+        font-size: 40px;
+        letter-spacing: 0.12em;
+    }
+
+    .login-logo-link small {
+        margin-top: 8px;
+        font-size: 18px;
+        letter-spacing: 0.2em;
+    }
+
+    .login-copy p {
+        font-size: 23px;
+    }
+
+    .login-options,
+    .login-alt-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .login-options {
+        display: grid;
+        justify-items: start;
+        gap: 10px;
+    }
+
+    .login-submit {
+        min-height: 54px;
+        font-size: 19px;
+    }
+
+    .login-alt-actions {
+        gap: 10px;
+    }
+
+    .login-frontier {
+        left: 18px;
+        right: 18px;
+        height: 58px;
+        gap: 10px;
+    }
+
+    .login-tree {
+        width: 28px;
+        height: 52px;
+    }
+
+    .login-tree::before {
+        height: 48px;
+    }
+
+    .login-tree::after {
+        width: 30px;
+        height: 34px;
+        bottom: 15px;
+    }
+
+    .login-wall {
+        height: 42px;
+    }
+
+    .login-tagline {
+        max-width: 24ch;
+        font-size: 18px;
     }
 }
 
@@ -1234,8 +2028,9 @@ body.dashboard-page {
 
 .dashboard-brand {
     display: inline-flex;
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
     color: var(--dash-ink);
     text-decoration: none;
 }
@@ -3355,12 +4150,18 @@ body.about-page {
     background: linear-gradient(180deg, var(--vellum), var(--parchment));
     box-shadow: -16px 0 38px rgba(26, 34, 56, 0.2);
     overflow-y: auto;
+    opacity: 0;
+    pointer-events: none;
     transform: translateX(102%);
     transition: transform 0.18s ease;
+    visibility: hidden;
 }
 
 .ak-glossary-drawer.is-open {
+    opacity: 1;
+    pointer-events: auto;
     transform: translateX(0);
+    visibility: visible;
 }
 
 .ak-glossary-head {
@@ -3416,6 +4217,101 @@ body.about-page {
     grid-column: 1 / -1;
     width: min(1180px, 100%);
     margin: 10px auto 36px;
+}
+
+/* Smooth in-page scrolling for the public homepage anchor nav
+   (Overview / Agents / Proof), with a little breathing room at the top. */
+html { scroll-behavior: smooth; }
+#overview, #agents, #proof { scroll-margin-top: 96px; }
+
+/* The Proof Layer — homepage trace pipeline (Decision → Hash → IPFS →
+   Arc Anchor → Verification). Built on the shared parchment tokens. */
+.home-proof {
+    grid-column: 1 / -1;
+    width: min(1180px, 100%);
+    margin: 0 auto 44px;
+}
+
+.home-proof-head {
+    text-align: center;
+    max-width: 66ch;
+    margin: 0 auto 26px;
+}
+
+.home-proof-head span {
+    color: var(--gold-deep);
+    font-family: var(--font-display);
+    font-size: 18px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.home-proof-head h2 {
+    margin: 8px 0 10px;
+    font-family: var(--font-display);
+    font-size: 30px;
+    line-height: 1.1;
+    font-weight: 500;
+}
+
+.home-proof-head p {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.4;
+    color: var(--ink-soft);
+}
+
+.proof-pipeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+}
+
+.proof-pipeline li {
+    position: relative;
+    border: 1px solid var(--rule);
+    background: rgba(255, 250, 238, 0.24);
+    padding: 18px 16px;
+}
+
+.proof-pipeline li b {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 20px;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+}
+
+.proof-pipeline li span {
+    font-size: 14px;
+    line-height: 1.35;
+    color: var(--ink-soft);
+}
+
+.proof-pipeline li:not(:last-child)::after {
+    content: "→";
+    position: absolute;
+    right: -11px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    color: var(--gold-deep);
+    font-size: 18px;
+}
+
+@media (max-width: 860px) {
+    .proof-pipeline { grid-template-columns: 1fr; }
+    .proof-pipeline li:not(:last-child)::after {
+        content: "↓";
+        right: auto;
+        left: 50%;
+        top: auto;
+        bottom: -16px;
+        transform: translateX(-50%);
+    }
 }
 
 .ak-context-strip + .dashboard-shell {
@@ -3717,3 +4613,65 @@ body.about-page {
         grid-template-columns: 1fr;
     }
 }
+
+/* ---- Rugpull Oracle (Pivot 1) — claim feed on the dashboard shell ------ */
+.oracle-lede {
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    margin: 0 0 18px;
+}
+.oracle-pipeline.home-proof {
+    width: 100%;
+    margin: 6px 0 4px;
+}
+.oracle-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.oracle-claim {
+    border: 1px solid var(--rule);
+    border-radius: var(--rad-md);
+    background: rgba(255, 250, 238, 0.30);
+    padding: 14px 16px;
+}
+.oc-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.oc-token {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+}
+.oc-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    margin: 8px 0;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-soft);
+}
+.oc-meta a { color: var(--gold-deep); text-decoration: none; }
+.oc-meta a:hover { text-decoration: underline; }
+.oc-bonds {
+    display: flex;
+    gap: 16px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+}
+.oc-for { color: var(--moss); }
+.oc-against { color: var(--crimson); }
+
+.oc-statement {
+    margin: 8px 0;
+    font-size: 15px;
+    line-height: 1.4;
+    color: var(--ink);
+}
+.oracle-claim .oc-meta a[target="_blank"] { color: var(--crimson); }
