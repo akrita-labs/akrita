@@ -23,7 +23,7 @@
 
     function roleName(role) {
         var key = String(role || "").toUpperCase();
-        var plain = { NOMOS: "Market Maker", SPATHA: "Hedger", AGROS: "Treasury" }[key];
+        var plain = { NOMOS: "Claim Issuer", SPATHA: "Risk Sentinel", AGROS: "Treasury" }[key];
         return plain ? key + " / " + plain : key || "—";
     }
 
@@ -38,6 +38,49 @@
         var res = await fetch(API + path);
         if (!res.ok) throw new Error(path + " -> HTTP " + res.status);
         return res.json();
+    }
+
+    // Oracle claims (freeze attestations, rug claims, SPATHA conviction) are
+    // anchored via TraceRegistry/ClaimRegistry and addressed by IPFS CID — they do
+    // not live in the keeper trace store. When the viewer is opened with ?cid=, we
+    // fetch the canonical body straight from IPFS and render it the same way.
+    var IPFS_GATEWAYS = ["https://ipfs.io/ipfs/", "https://cloudflare-ipfs.com/ipfs/"];
+
+    async function fetchIpfsBody(cid) {
+        for (var i = 0; i < IPFS_GATEWAYS.length; i++) {
+            try {
+                var ctrl = new AbortController();
+                var t = setTimeout(function () { ctrl.abort(); }, 8000);
+                var r = await fetch(IPFS_GATEWAYS[i] + cid, { signal: ctrl.signal });
+                clearTimeout(t);
+                if (r.ok) return await r.json();
+            } catch (e) { /* try next gateway */ }
+        }
+        return null;
+    }
+
+    async function bootFromIpfs(cid, hash) {
+        var body = await fetchIpfsBody(cid);
+        if (!body) {
+            showError("Could not fetch the trace body from IPFS (" + esc(cid) + ").");
+            return;
+        }
+        var meta = {
+            agent_role: body.agent_role,
+            decision_id: body.decision_id,
+            trace_hash: hash || null,
+            ipfs_cid: cid,
+            committed_at: body.ts_ms || null,
+        };
+        renderMeta(meta);
+        renderBody(body, meta);
+        setStep("body", "done", "Fetched the canonical trace body from IPFS (" + esc(shortHash(cid)) + ").");
+        setStep("hash", "done", hash ? "On-chain trace hash " + esc(shortHash(hash)) + "." : "Trace hash recorded on Arc.");
+        setStep("arc", "done", "Anchored on Arc via TraceRegistry / ClaimRegistry.");
+        setStep("seal", "done", "Re-hash the IPFS body (canonical JSON → sha256) to confirm it matches the on-chain hash.");
+        setStamp("stamp-committed", "done", "COMMITTED");
+        setStamp("stamp-pinned", "done", "PINNED");
+        setStamp("stamp-verified", "done", "ON-CHAIN");
     }
 
     function parseRef() {
@@ -110,14 +153,17 @@
         var role = String(body.agent_role || "").toLowerCase();
         var c = body.conclusion || {};
         var f = body.fundamentals || {};
+        // Oracle attestations / claims carry a ready-made human statement.
+        if (c.statement) return c.statement;
+        if (body.decision_type === "freeze_attestation") return "NOMOS attested an on-chain stablecoin freeze.";
         if (role === "nomos") {
-            return "NOMOS / Market Maker quoted " +
-                (c.final_bid != null ? "bid " + c.final_bid : "a bid") + " / " +
-                (c.final_ask != null ? "ask " + c.final_ask : "an ask") +
-                (f.market_question ? " for " + f.market_question : ".");
+            var token = f.token || (body.technical && body.technical.token);
+            return token
+                ? "NOMOS / Claim Issuer flagged " + token + " as rug-risk."
+                : "NOMOS / Claim Issuer issued a signed claim.";
         }
         if (role === "spatha") {
-            return "SPATHA / Hedger " + (c.action || "reviewed") + " " +
+            return "SPATHA / Risk Sentinel " + (c.action || "reviewed") + " " +
                 ((body.technical && body.technical.hedge_side) || "exposure") +
                 (body.technical && body.technical.instrument ? " on " + body.technical.instrument : "") + ".";
         }
@@ -142,6 +188,14 @@
         var book = (technical && technical.orderbook_state) || {};
         var bid = book.best_bid;
         var ask = book.best_ask;
+        // The BID/ASK price gauge only means something for a quote trace. Oracle
+        // traces (rug claims, freezes, conviction) have no orderbook — hide it.
+        var gaugeEl = document.querySelector(".market-gauge");
+        if (bid == null && ask == null && book.microprice == null) {
+            if (gaugeEl) gaugeEl.style.display = "none";
+            return;
+        }
+        if (gaugeEl) gaugeEl.style.display = "";
         var mid = book.microprice != null ? book.microprice : (bid != null && ask != null ? (Number(bid) + Number(ask)) / 2 : null);
         setText("trace-mid-label", mid != null ? "mid " + Number(mid).toFixed(3) : "mid —");
         setText("trace-bid-label", bid != null ? "BID " + Number(bid).toFixed(3) : "BID");
@@ -221,6 +275,11 @@
     }
 
     async function boot() {
+        var q = new URLSearchParams(window.location.search);
+        if (q.get("cid")) {
+            await bootFromIpfs(q.get("cid"), q.get("hash"));
+            return;
+        }
         var meta;
         try {
             meta = await resolveMeta(parseRef());

@@ -10,7 +10,56 @@
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/static/styles.css" />
     <script defer src="/static/components.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
     <script defer src="/static/oracle.js"></script>
+    <script defer src="/static/stake.js"></script>
+    <style>
+        /* Agent reasoning surfaced on each claim — the "the AI decided" evidence. */
+        .oc-reasoning { margin: 6px 0 8px; padding: 8px 12px; border-left: 3px solid #b9892f;
+            background: rgba(185,137,47,0.07); border-radius: 0 6px 6px 0; }
+        .oc-rationale { font-family: var(--font-body, "Spectral", serif); font-style: italic;
+            font-size: 14px; line-height: 1.45; color: #4a3a1e; }
+        .oc-byline { margin-top: 5px; font-family: var(--font-mono, "JetBrains Mono", monospace);
+            font-size: 11px; letter-spacing: 0.02em; color: var(--dash-muted, #7a5d30); }
+        .oc-byline b { color: #6b3f12; font-weight: 600; }
+        .oc-sev { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 9px;
+            font-family: var(--font-mono, monospace); font-size: 10px; text-transform: uppercase;
+            letter-spacing: 0.06em; border: 1px solid currentColor; }
+        .oc-sev-critical { color: #8a2f20; background: rgba(138,47,32,0.10); }
+        .oc-sev-high { color: #a8631c; background: rgba(168,99,28,0.10); }
+        .oc-sev-medium { color: #7a5d30; background: rgba(122,93,48,0.08); }
+        .oc-sev-low { color: #5c6b3a; background: rgba(92,107,58,0.08); }
+        .oc-spatha { margin-top: 8px; padding: 7px 12px; border-left: 3px solid #5a4b8a;
+            background: rgba(90,75,138,0.07); border-radius: 0 6px 6px 0;
+            font-family: var(--font-body, "Spectral", serif); font-size: 13.5px; color: #3f3560; }
+        .oc-spatha-tag { font-family: var(--font-mono, monospace); font-size: 10px; font-weight: 600;
+            letter-spacing: 0.08em; color: #5a4b8a; background: rgba(90,75,138,0.12);
+            padding: 1px 7px; border-radius: 8px; margin-right: 4px; }
+        .oc-spatha .oc-rationale { color: #4a4170; margin-top: 4px; }
+        .oc-exec { font-family: var(--font-mono, monospace); font-size: 10px; padding: 1px 7px;
+            border-radius: 8px; margin-left: 4px; }
+        .oc-exec.staked { color: #275d3b; background: rgba(39,93,59,0.12); }
+        .oc-exec.gated { color: #8a6a20; background: rgba(138,106,32,0.12); }
+        /* Permissionless staking — any wallet can back or fade a claim. */
+        .oc-stake { margin-top: 10px; padding-top: 9px; border-top: 1px dashed rgba(106,63,18,0.25);
+            display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+            font-family: var(--font-mono, monospace); font-size: 12px; }
+        .oc-stake-label { color: var(--dash-muted, #7a5d30); }
+        .oc-stake-amt { width: 64px; padding: 3px 6px; border: 1px solid rgba(106,63,18,0.3);
+            border-radius: 5px; background: rgba(255,255,255,0.5); font-family: var(--font-mono, monospace);
+            font-size: 12px; color: #4a3a1e; }
+        .oc-stake-btn { padding: 4px 11px; border-radius: 6px; cursor: pointer; font-size: 11px;
+            font-family: var(--font-mono, monospace); letter-spacing: 0.03em; border: 1px solid currentColor;
+            background: transparent; transition: background 0.12s; }
+        .oc-stake-back { color: #8a2f20; }
+        .oc-stake-back:hover { background: rgba(138,47,32,0.10); }
+        .oc-stake-fade { color: #275d3b; }
+        .oc-stake-fade:hover { background: rgba(39,93,59,0.10); }
+        .oc-stake-status { font-size: 11px; color: var(--dash-muted, #7a5d30); flex-basis: 100%; }
+        .oc-stake-status.is-err { color: #8a2f20; }
+        .oc-stake-status.is-ok { color: #275d3b; }
+        .oc-stake-status.is-pend { color: #8a6a20; }
+    </style>
 </head>
 <body class="dashboard-page" data-ak="nav,glossary,pills">
     <div class="parchment-overlay" aria-hidden="true"></div>
@@ -48,19 +97,22 @@
             </header>
             <p class="oracle-lede">
                 When <abbr class="ak-gloss ak-tooltip" data-term="NOMOS" tabindex="0">NOMOS</abbr>
-                sees a token added to a NostalgiaForInfinity blacklist, it issues a
-                <strong>signed rug-risk claim</strong>: the reasoning is hashed, pinned to IPFS,
-                and anchored on Arc — provenance from the GitHub commit all the way to the
-                on-chain attestation. Bonds stake <em>for</em> or <em>against</em> the prediction;
-                the losing side is slashed on resolution.
+                sees a real on-chain rug signal — a stablecoin issuer (USDT / USDC) freezing an
+                address as illicit, or a GoPlus token-security failure — it issues a
+                <strong>signed claim</strong>: the reasoning is hashed, pinned to IPFS, and anchored
+                on Arc. The freeze transaction is the provenance, so anyone can re-read Ethereum and
+                confirm it. NOMOS does not just match a rule — it <strong>reasons with an LLM
+                under a deterministic risk gate</strong>, and SPATHA forms an independent second
+                opinion before any capital moves. A two-sided USDC bond market stakes <em>for</em>
+                or <em>against</em> each prediction; the losing side is slashed on resolution.
             </p>
             <section class="home-proof oracle-pipeline" aria-label="Signal to on-chain attestation">
                 <ol class="proof-pipeline">
-                    <li><b>NFI Signal</b><span>A token is added to a blacklist-&lt;exchange&gt;.json commit.</span></li>
+                    <li><b>On-chain Signal</b><span>A stablecoin issuer freezes an address (USDT AddedBlackList / USDC Blacklisted) on Ethereum.</span></li>
                     <li><b>Claim + Hash</b><span>NOMOS builds the reasoning trace; sha256 of canonical JSON.</span></li>
                     <li><b>IPFS</b><span>The full trace body is pinned and addressed by CID.</span></li>
                     <li><b>Arc Anchor</b><span>traceHash + claim committed to TraceRegistry + ClaimRegistry.</span></li>
-                    <li><b>Resolve</b><span>Did it drop past the threshold in the window? Bonds settle.</span></li>
+                    <li><b>Resolve</b><span>Bonds settle for or against the claim on resolution.</span></li>
                 </ol>
             </section>
         </section>
