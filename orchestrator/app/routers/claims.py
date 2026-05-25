@@ -12,8 +12,25 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from adapters import get_adapters
+from shared.config import settings
 
 router = APIRouter()
+
+
+async def _with_spatha(arc, claim: dict, claim_id: int) -> dict:
+    """Attach SPATHA's on-chain conviction trace (agent 2) for predictive claims,
+    so the oracle UI can show the second-opinion decision next to the claim."""
+    if int(claim.get("window_s", 0)) <= 0:
+        return claim  # freeze attestation — not predictive, no SPATHA bet
+    from agents.spatha.conviction_issuer import spatha_decision_id
+
+    try:
+        commit = await arc.get_trace_commit(2, spatha_decision_id(claim_id))
+    except Exception:
+        commit = None
+    if commit and commit.get("ipfs_cid"):
+        claim["spatha"] = {"trace_hash": commit.get("trace_hash"), "ipfs_cid": commit.get("ipfs_cid")}
+    return claim
 
 
 class IssueClaimReq(BaseModel):
@@ -41,12 +58,15 @@ async def list_claims(limit: int = 50) -> dict:
     except Exception as e:
         return {"claims": [], "total": 0, "available": False, "detail": str(e)}
 
+    arc = get_adapters().arc
     out: list[dict] = []
     stop = max(0, total - max(1, limit))
     for cid in range(total, stop, -1):
         c = await cr.get_claim(cid)
         if c:
-            out.append(await _with_bond(cr, c, cid))
+            c = await _with_bond(cr, c, cid)
+            c = await _with_spatha(arc, c, cid)
+            out.append(c)
     return {"claims": out, "total": total, "available": True}
 
 
@@ -56,7 +76,8 @@ async def get_claim(claim_id: int) -> dict:
     c = await cr.get_claim(claim_id)
     if not c:
         raise HTTPException(404, "claim not found")
-    return await _with_bond(cr, c, claim_id)
+    c = await _with_bond(cr, c, claim_id)
+    return await _with_spatha(get_adapters().arc, c, claim_id)
 
 
 @router.post("/issue")
@@ -85,6 +106,51 @@ async def scan_freezes(limit: int = 5, deep: bool = False) -> dict:
         return {"scanned": len(results), "results": results}
     except Exception as e:
         raise HTTPException(503, f"freeze scan failed: {e}")
+
+
+@router.post("/discover")
+async def discover(max_candidates: int = 40, max_select: int = 5) -> dict:
+    """Operator/demo: NOMOS discovers freshly-promoted tokens from the open market,
+    the reasoner triages which to screen, and genuine rugs are claimed on-chain —
+    the agent picking its own targets. 503 until the oracle is wired."""
+    from agents.nomos.claim_issuer import discover_and_screen
+
+    try:
+        return await discover_and_screen(
+            get_adapters(), max_candidates=max(1, max_candidates), max_select=max(1, max_select)
+        )
+    except Exception as e:
+        raise HTTPException(503, f"discovery failed: {e}")
+
+
+@router.post("/resolve-scan")
+async def resolve_scan(limit: int = 20) -> dict:
+    """Operator/demo: AGROS checks each open predictive claim's real live market and
+    settles the bond only on clear evidence (rugged/held); still-trading tokens stay
+    open. Returns the per-claim assessment. 503 until the oracle is wired."""
+    from agents.agros.resolver_issuer import resolve_open_claims
+
+    try:
+        results = await resolve_open_claims(get_adapters(), limit=max(1, limit))
+        return {"scanned": len(results), "results": results}
+    except Exception as e:
+        raise HTTPException(503, f"resolve scan failed: {e}")
+
+
+@router.post("/spatha-scan")
+async def spatha_scan(limit: int = 10) -> dict:
+    """Operator/demo: SPATHA forms (and where funded, places) bond conviction on
+    recent open predictive claims, anchoring each decision on Arc as agent 2.
+    Idempotent per claim. 503 until the oracle is wired."""
+    from agents.spatha.conviction_issuer import scan_open_claims
+
+    try:
+        results = await scan_open_claims(
+            get_adapters(), limit=max(1, limit), max_stake_usdc=settings.spatha_max_stake_usdc
+        )
+        return {"scanned": len(results), "results": results}
+    except Exception as e:
+        raise HTTPException(503, f"spatha scan failed: {e}")
 
 
 @router.post("/{claim_id}/resolve")

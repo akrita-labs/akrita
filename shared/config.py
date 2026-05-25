@@ -92,8 +92,31 @@ class Settings(BaseSettings):
     # of token addresses NOMOS screens for rug-risk flags.
     goplus_chain_id: int = 1  # Ethereum mainnet
     goplus_watchlist: str = ""
+    # Continuous GoPlus screening loop (opt-in, forward-looking rug-capability
+    # detection). When enabled NOMOS re-screens the watchlist every interval and
+    # issues a claim on anything the reasoner judges a genuine rug. Default OFF.
+    goplus_oracle_enabled: bool = False
+    goplus_oracle_interval_s: int = 900
     claim_window_s: int = 604800  # 7 days
     claim_drop_threshold_bps: int = 5000  # 50%
+    # SPATHA bond-conviction loop (opt-in): for each open predictive claim, SPATHA
+    # forms an independent LLM judgment, anchors it on Arc (agent 2), and (when the
+    # SPATHA keeper holds USDC on Arc) stakes its conviction, capped per claim.
+    spatha_oracle_enabled: bool = False
+    spatha_oracle_interval_s: int = 300
+    spatha_max_stake_usdc: float = 5.0
+    # Goal-seeking discovery loop (opt-in): NOMOS pulls freshly-promoted tokens
+    # from the open market (DEXScreener), the reasoner triages which to screen, and
+    # genuine rugs are claimed — the agent picks its own targets. Default OFF.
+    discovery_oracle_enabled: bool = False
+    discovery_oracle_interval_s: int = 1800
+    discovery_max_candidates: int = 40
+    discovery_max_select: int = 5
+    # AGROS bond-resolution loop (opt-in): checks each open predictive claim's real
+    # live market and settles the bond only on clear evidence (rugged/held); still-
+    # trading tokens stay open. Closes the prediction-market loop honestly.
+    resolver_oracle_enabled: bool = False
+    resolver_oracle_interval_s: int = 1800
     # Gateway source chain that funds the Arc bond pool (set when funded).
     bond_source_chain: str = ""
     bond_source_domain: int = 0
@@ -269,6 +292,11 @@ class Settings(BaseSettings):
     @property
     def subscribed_market_ids(self) -> list[str]:
         return [m.strip() for m in self.subscribed_markets.split(",") if m.strip()]
+
+    @property
+    def goplus_watchlist_addrs(self) -> list[str]:
+        """Token addresses NOMOS re-screens on the GoPlus loop."""
+        return [a.strip() for a in self.goplus_watchlist.split(",") if a.strip()]
 
     @property
     def sync_postgres_dsn(self) -> str:

@@ -75,6 +75,32 @@ CLAIM_REGISTRY_ABI = [
             {"name": "againstStake", "type": "uint256"},
         ],
     },
+    {
+        "type": "function",
+        "name": "bondToken",
+        "stateMutability": "view",
+        "inputs": [],
+        "outputs": [{"name": "", "type": "address"}],
+    },
+]
+
+# Minimal ERC-20 surface for the bond token (USDC on Arc): read the staker balance
+# and approve the registry before a stake.
+_ERC20_ABI = [
+    {
+        "type": "function",
+        "name": "balanceOf",
+        "stateMutability": "view",
+        "inputs": [{"name": "", "type": "address"}],
+        "outputs": [{"name": "", "type": "uint256"}],
+    },
+    {
+        "type": "function",
+        "name": "allowance",
+        "stateMutability": "view",
+        "inputs": [{"name": "owner", "type": "address"}, {"name": "spender", "type": "address"}],
+        "outputs": [{"name": "", "type": "uint256"}],
+    },
 ]
 
 
@@ -165,5 +191,77 @@ class ClaimRegistryReal:
             contract_address=settings.claim_registry_addr,
             abi_signature="resolve(uint256,bool)",
             abi_parameters=[str(int(claim_id)), bool(rugged)],
+            blockchain="ARC-TESTNET",
+        )
+
+    # ----- bond market (SPATHA conviction stake) --------------------------
+
+    async def bond_token(self) -> str:
+        """The ERC-20 used for bonds (USDC on Arc)."""
+        return await self._contract().functions.bondToken().call()
+
+    async def usdc_balance(self, address: str) -> int:
+        """USDC (bond-token) balance of an address, base units (6 decimals)."""
+        bt = await self.bond_token()
+        erc20 = self._w3.eth.contract(address=AsyncWeb3.to_checksum_address(bt), abi=_ERC20_ABI)
+        return int(await erc20.functions.balanceOf(AsyncWeb3.to_checksum_address(address)).call())
+
+    async def stake(
+        self,
+        claim_id: int,
+        backs_claim: bool,
+        amount_base_units: int,
+        *,
+        wallet_role: str = "hedge-keeper",
+        approve: bool = True,
+    ) -> dict:
+        """SPATHA stakes its conviction on a claim: `backs_claim=True` bets the
+        token rugs, False bets it holds. `amount_base_units` is USDC (6 decimals).
+
+        Two writes signed by the SPATHA (hedge) Circle MPC keeper: `approve` the
+        registry to pull the USDC, then `stake`. Gated on that wallet actually
+        holding USDC on Arc — raises if unfunded so the caller reports honestly.
+        """
+        if not self._addr:
+            raise RuntimeError("CLAIM_REGISTRY_ADDR not set — deploy ClaimRegistry first")
+        amount = int(amount_base_units)
+        if amount <= 0:
+            raise ValueError("stake amount must be positive")
+        wallet_id = self._wallets.wallet_id(wallet_role, "ARC-TESTNET")
+        out: dict = {}
+        if approve:
+            bt = await self.bond_token()
+            approve_rcpt = await self._wallets.execute_contract(
+                wallet_id=wallet_id,
+                contract_address=bt,
+                abi_signature="approve(address,uint256)",
+                abi_parameters=[settings.claim_registry_addr, str(amount)],
+                blockchain="ARC-TESTNET",
+            )
+            out["approve_tx"] = getattr(approve_rcpt, "tx_hash", None)
+        stake_rcpt = await self._wallets.execute_contract(
+            wallet_id=wallet_id,
+            contract_address=settings.claim_registry_addr,
+            abi_signature="stake(uint256,bool,uint256)",
+            abi_parameters=[str(int(claim_id)), bool(backs_claim), str(amount)],
+            blockchain="ARC-TESTNET",
+        )
+        out["stake_tx"] = getattr(stake_rcpt, "tx_hash", None)
+        out["claim_id"] = int(claim_id)
+        out["backs_claim"] = bool(backs_claim)
+        out["amount_base_units"] = amount
+        return out
+
+    async def withdraw(self, claim_id: int, *, wallet_role: str = "hedge-keeper") -> TxReceipt:
+        """Withdraw a settled bond (winners get stake + pro-rata share of the
+        losing pool; losers are slashed). Idempotent per staker on-chain."""
+        if not self._addr:
+            raise RuntimeError("CLAIM_REGISTRY_ADDR not set — deploy ClaimRegistry first")
+        wallet_id = self._wallets.wallet_id(wallet_role, "ARC-TESTNET")
+        return await self._wallets.execute_contract(
+            wallet_id=wallet_id,
+            contract_address=settings.claim_registry_addr,
+            abi_signature="withdraw(uint256)",
+            abi_parameters=[str(int(claim_id))],
             blockchain="ARC-TESTNET",
         )
