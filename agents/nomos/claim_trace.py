@@ -17,11 +17,18 @@ from shared.canonical import trace_hash
 
 
 def build_claim_trace(record: dict, *, decision_id: int) -> dict:
-    """Canonical reasoning-trace body for a GoPlus-sourced rug-risk claim."""
+    """Canonical reasoning-trace body for a GoPlus-sourced rug-risk claim.
+
+    When `record["assessment"]` is present (the LLM reasoner's verdict), the
+    agent's judgment — who decided, confidence, severity, rationale, key factors —
+    is committed as a first-class `reasoning` section, so the AI's actual decision
+    is part of the on-chain-anchored hash, not an afterthought.
+    """
     window_days = max(1, record["window_s"] // 86400)
     drop_pct = record["drop_threshold_bps"] / 100.0
     reasons = record.get("reasons", [])
-    return {
+    a = record.get("assessment") or {}
+    body = {
         "schema_version": "akrita/trace/v1",
         "decision_id": decision_id,
         "agent_role": "nomos",
@@ -52,8 +59,22 @@ def build_claim_trace(record: dict, *, decision_id: int) -> dict:
                 f"{record['token']} flagged by GoPlus ({', '.join(reasons) or 'risk'}) — "
                 f"rug risk: predict >{drop_pct:.0f}% drop within {window_days}d"
             ),
+            "confidence": a.get("confidence"),
+            "severity": a.get("severity"),
+            "rationale": a.get("rationale"),
         },
     }
+    if a:
+        body["reasoning"] = {
+            "decided_by": a.get("decided_by"),
+            "model": a.get("model"),
+            "confidence": a.get("confidence"),
+            "severity": a.get("severity"),
+            "rationale": a.get("rationale"),
+            "key_factors": a.get("key_factors", []),
+            "latency_ms": a.get("latency_ms"),
+        }
+    return body
 
 
 def claim_trace_hash(body: dict) -> str:

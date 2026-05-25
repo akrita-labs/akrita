@@ -71,9 +71,15 @@ def build_freeze_record(log: dict, issuer: dict) -> dict:
     }
 
 
-def build_freeze_trace(record: dict, *, decision_id: int) -> dict:
-    """Canonical reasoning-trace body for a freeze attestation (mirrors TraceBody)."""
-    return {
+def build_freeze_trace(record: dict, *, decision_id: int, assessment: Optional[dict] = None) -> dict:
+    """Canonical reasoning-trace body for a freeze attestation (mirrors TraceBody).
+
+    When `assessment` (the LLM reasoner's interpretation) is supplied, the agent's
+    read of the freeze — severity, likely cause, rationale — is committed as a
+    first-class `reasoning` section alongside the immutable on-chain fact.
+    """
+    a = assessment or {}
+    body = {
         "schema_version": "akrita/trace/v1",
         "decision_id": decision_id,
         "agent_role": "nomos",
@@ -99,8 +105,21 @@ def build_freeze_trace(record: dict, *, decision_id: int) -> dict:
                 f"{record['issuer']} froze {record['frozen_address']} at block "
                 f"{record['block']} — flagged illicit (sanctions / hack / fraud)"
             ),
+            "severity": a.get("severity"),
+            "likely_cause": a.get("likely_cause"),
+            "rationale": a.get("rationale"),
         },
     }
+    if a:
+        body["reasoning"] = {
+            "decided_by": a.get("decided_by"),
+            "model": a.get("model"),
+            "severity": a.get("severity"),
+            "likely_cause": a.get("likely_cause"),
+            "rationale": a.get("rationale"),
+            "latency_ms": a.get("latency_ms"),
+        }
+    return body
 
 
 def freeze_trace_hash(body: dict) -> str:
